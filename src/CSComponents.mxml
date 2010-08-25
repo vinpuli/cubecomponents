@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:components="cube.spark.components.*"
+			   creationComplete="{getTestData()}">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace components "cube.spark.components.*";
+		@namespace spark "cube.skins.spark.*";
+		@namespace business "cube.skins.spark.business.*";
+		
+		.global
+		{
+			font-family:"Arial,Verdana,Helvetica";
+			font-weight:normal;
+			font-size:11;
+			color:#333333;
+		}
+		
+		.styleHeader
+		{
+			font-weight:bold;
+			font-size:12;
+			font-style:normal;
+			color:#333333;
+		}
+		
+		s|Panel
+		{
+			corner-radius: 10;
+		}
+		
+		components|OrganizationChart
+		{
+			data-group-style-name: dataGroup;
+		}
+		
+		spark|OrganizationChartItemSkin
+		{
+			corner-radius: 12;
+		}
+		
+		business|BusinessOrganizationChartItemSkin
+		{
+			corner-radius: 12;
+		}
+		
+		.dataGroup
+		{
+			horizontal-padding: 20;
+			vertical-padding: 40;
+		}
+	</fx:Style>
+	<fx:Script>
+		<![CDATA[
+			import cube.skins.spark.OrganizationChartItemSkin;
+			import cube.skins.spark.OrganizationChartSkin;
+			import cube.skins.spark.business.BusinessOrganizationChartItemSkin;
+			import cube.spark.components.supportClasses.OrganizationChartItemState;
+			import cube.spark.utils.HierarchicalDataGroupStyles;
+			import cube.spark.utils.OrganizationChartStyles;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.UIComponent;
+			import mx.events.CollectionEvent;
+			import mx.events.ListEvent;
+			
+			import spark.skins.spark.DefaultComplexItemRenderer;
+			
+			[Bindable]
+			private var _dataProvider:ArrayCollection;
+			[Bindable]
+			private var _organizationChartStyles:OrganizationChartStyles = new OrganizationChartStyles();
+			[Bindable]
+			private var _hierarchicalDataGroupStyles:HierarchicalDataGroupStyles = new HierarchicalDataGroupStyles();
+			
+			private var _FIRST_NAMES:Array = [
+				"Albert", "Alan", "Amy", "Anna", "Anthony", "Alvin", "Anouchka", "Anita",
+				"Ben", "Benjamin", "Bert", "Bob", "Babette", "Bea", "Bianca", "Barry", "Bridget",
+				"Calum", "Cory", "Charlotte", "Chris", "Caroline", "Carmen", "Cindy", "Chantal",
+				"David", "Dave", "Dirk", "Douglas", "Danny", "Diane",
+				"Eric", "Eloise", "Erica",
+				"Frank", "Francis", "Francesca",
+				"Guy", "Gwendolyn", "Gianluca", "Garry", "Gina",
+				"Hiatt", "Helga", "Harry", "Humphrey",
+				"Ian", "Isabel", "Ilona", "Ike",
+				"John", "Jeremy", "Jill", "Jenna",
+				"Kevin", "Katherine", "Kirk",
+				"Lars", "Larry", "Lorraine", "Lewellyn",
+				"Mona", "Marc", "Mandy", "Marvin", "Mike", "Michael",
+				"Norm", "Nelly", "Nick", "Nadia",
+				"Olga", "Orson", "Olaf",
+				"Peter", "Pascal", "Patricia", "Paul",
+				"Quinten",
+				"Rina", "Rice", "Randy", "Richard", "Robert", "Roberta", "Rocky", "Randall", "Rhianna", "Rupert", "Ruth",
+				"Steve", "Sandy", "Steward", "Stacy", "Stern", "Samantha", "Stephen", "Sonya",
+				"Thomas", "Terry", "Timothy", "Terrence", "Tania", "Tamara", "Titus", "Tony", "Timothy",
+				"Ursula", "Usain", "Uma",
+				"Vince", "Vinny", "Vanessa", "Vana",
+				"Xavier",
+				"Zach", "Zara"
+			];
+			
+			private var _LAST_NAMES:Array = [
+				"Arthur", "Arturo", "Andersson", "Austin",
+				"Bartholomew", "Ballantine", "Benson",
+				"Carlisle", "Cavanaugh", "Clarcke",
+				"Davies", "Donahue", "Dawson", "Dunne", "Dickson", "Dickens", "Dyke", "Dillan",
+				"Erickson", "Evans", "Eaton", "East",
+				"Finnigan", "Frederickson", "Finley", "Frampton",
+				"Gillingham", "Green",
+				"Halifax", "Hardy", "Hughes", "Hendrickson", "Hendry", "Hacken",
+				"Isaksson", "Ickson",
+				"Jones", "Jeffries", "Jackson", "Jameson",
+				"Kimball", "Kendry", "Kent",
+				"Lloyd", "Lancashire", "Lewell",
+				"McIntosh", "McArlyle", "McAvoy", "Mellon", "Michigan",
+				"Newell", "Nolan",
+				"Orwell", "Ostend", "Ostridge",
+				"Peacock", "Pembridge", "Palace", "Percy",
+				"Quagiarella", "Quacken",
+				"Royce", "Rover", "Roberts", "Robertson", "Reardon",
+				"Trundle", "Tavish", "Telford",
+				"Underwood", "Upson",
+				"Vanderbuilt", "Vogue", "Virgo",
+				"Wilson", "Willis", "Waterman", "Willard",
+				"Zamora"
+			];
+			
+			private function getTestData():void {
+				_organizationChartStyles.addEventListener("styleChanged", styleObject_styleChangedHandler, false, 0, true);
+				_hierarchicalDataGroupStyles.addEventListener("styleChanged", styleObject_styleChangedHandler, false, 0, true);
+				
+				const source:Array = new Array();
+				var possibleOwners:Array;
+				var rndIndex:Object;
+				var data:Object;
+				var i:int;
+				var nextID:int = 0;
+				/*source.push({id:100, ownerId:-1, state:0, childCount:0});
+				source.push({id:101, ownerId:100, state:0, childCount:0});
+				source.push({id:102, ownerId:100, state:0, childCount:0});
+				source.push({id:103, ownerId:100, state:0, childCount:0});
+				source.push({id:104, ownerId:101, state:0, childCount:0});
+				source.push({id:105, ownerId:102, state:0, childCount:0});
+				source.push({id:106, ownerId:102, state:0, childCount:0});
+				source.push({id:107, ownerId:103, state:0, childCount:0});
+				source.push({id:108, ownerId:104, state:0, childCount:0});
+				source.push({id:109, ownerId:105, state:0, childCount:0});*/
+				
+				source.push({id:nextID++, ownerId:-1, state:OrganizationChartItemState.MINIMIZED, childCount:0,
+					firstName: _FIRST_NAMES[int(Math.random()*_FIRST_NAMES.length)],
+					lastName: _LAST_NAMES[int(Math.random()*_LAST_NAMES.length)],
+					disconnected:false});
+				while (source.length < 100) {
+					possibleOwners = new Array();
+					for (i=0; i<source.length; i++) {
+						data = source[i];
+						if (data.childCount < 3) {
+							possibleOwners.push({id:data.id, index:i});
+						}
+					}
+					rndIndex = possibleOwners[Math.floor(Math.random()*possibleOwners.length)];
+					source.push({id:nextID++,
+								 ownerId: rndIndex.id,
+								 state: OrganizationChartItemState.MINIMIZED, childCount: 0,
+								 itemRendererSkin: null/*(1 == 1 || nextID%2==0) ? OrganizationChartItemSkin : BusinessOrganizationChartItemSkin*/,
+								 firstName: _FIRST_NAMES[int(Math.random()*_FIRST_NAMES.length)],
+								 lastName: _LAST_NAMES[int(Math.random()*_LAST_NAMES.length)],
+								 disconnected: false
+					});
+					source[rndIndex.index].childCount++;
+				}
+				_dataProvider = new ArrayCollection(source);
+				_dataProvider.addEventListener(CollectionEvent.COLLECTION_CHANGE, dataProvider_collectionChangeHandler, false, 0, true);
+			}
+			
+			protected function dataProvider_collectionChangeHandler(event:CollectionEvent):void {
+				dataGrid.invalidateList();
+			}
+			
+			protected function styleInput_changeHandler(event:Event):void {
+				const inputComponent:UIComponent = event.currentTarget as UIComponent;
+				if (_organizationChartStyles.hasOwnProperty(inputComponent.name)) {
+					_organizationChartStyles.setStyle(inputComponent.name,
+						(inputComponent is TextInput) ? 
+						parseInt((inputComponent as TextInput).text) :
+						(inputComponent is HSlider) ? 
+						(inputComponent as HSlider).value :
+						(inputComponent is ColorPicker) ? 
+						(inputComponent as ColorPicker).selectedColor
+						: 0);
+				} else {
+					_hierarchicalDataGroupStyles.setStyle(inputComponent.name,
+						(inputComponent is TextInput) ? 
+						parseInt((inputComponent as TextInput).text) :
+						(inputComponent is HSlider) ? 
+						(inputComponent as HSlider).value :
+						(inputComponent is ComboBox) ? 
+						(inputComponent as ComboBox).selectedItem.value
+						: 0);
+				}
+			}
+			
+			protected function styleObject_styleChangedHandler(event:Event):void {
+				cssOuput.text = '@namespace s "library://ns.adobe.com/flex/spark";\r@namespace mx "library://ns.adobe.com/flex/mx";\r@namespace components "cube.spark.components.*";\r@namespace spark "cube.skins.spark.*";\r@namespace business "cube.skins.spark.business.*";\r\r' +
+								_organizationChartStyles.toCSS()+"\r\r"+_hierarchicalDataGroupStyles.toCSS();
+				
+				organizationChart.setStyle("backgroundAlpha", _organizationChartStyles.backgroundAlpha);
+				organizationChart.setStyle("backgroundColor", _organizationChartStyles.backgroundColor);
+				organizationChart.setStyle("borderAlpha", _organizationChartStyles.borderAlpha);
+				organizationChart.setStyle("borderColor", _organizationChartStyles.borderColor);
+				
+				organizationChart.dataGroup.setStyle("itemRendererSkin", _hierarchicalDataGroupStyles.itemRendererSkin);
+				organizationChart.dataGroup.setStyle("horizontalPadding", _hierarchicalDataGroupStyles.horizontalPadding);
+				organizationChart.dataGroup.setStyle("verticalPadding", _hierarchicalDataGroupStyles.verticalPadding);
+				organizationChart.dataGroup.setStyle("itemMinimizedWidth", _hierarchicalDataGroupStyles.itemMinimizedWidth);
+				organizationChart.dataGroup.setStyle("itemMinimizedHeight", _hierarchicalDataGroupStyles.itemMinimizedHeight);
+				organizationChart.dataGroup.setStyle("itemNormalWidth", _hierarchicalDataGroupStyles.itemNormalWidth);
+				organizationChart.dataGroup.setStyle("itemNormalHeight", _hierarchicalDataGroupStyles.itemNormalHeight);
+				organizationChart.dataGroup.setStyle("itemMaximizedWidth", _hierarchicalDataGroupStyles.itemMaximizedWidth);
+				organizationChart.dataGroup.setStyle("itemMaximizedHeight", _hierarchicalDataGroupStyles.itemMaximizedHeight);
+			}
+
+		]]>
+	</fx:Script>
+	<mx:DividedBox direction="horizontal" paddingLeft="6" paddingBottom="6" paddingRight="6" paddingTop="6" backgroundColor="0x888888" width="100%" height="100%">
+		<s:Panel title="Organization Chart Styles" backgroundColor="#cccccc" dropShadowVisible="false" width="100%" height="100%">
+			<components:OrganizationChart id="organizationChart" top="4" right="4" bottom="4" left="4" dataProvider="{_dataProvider}" />
+		</s:Panel>
+		<mx:DividedBox direction="vertical" backgroundColor="0x888888" width="100%" height="100%">
+			<s:Panel title="Organization Chart" backgroundColor="#eeeeee" dropShadowVisible="false" width="100%" height="100%">
+				<s:Scroller top="6" right="6" bottom="6" left="6">
+					<s:VGroup top="6" right="6" bottom="6" left="6" paddingBottom="6" paddingLeft="6" paddingRight="6" paddingTop="6">
+						<s:Label text="Organization Chart Styles" styleName="styleHeader" width="100%" />
+						<s:Rect width="100%" height="1">
+							<s:stroke>
+								<s:SolidColorStroke color="#dddddd" />
+							</s:stroke>
+						</s:Rect>
+						<mx:Spacer width="100%" height="4" />
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Background alpha:" width="100%" />
+							<s:HSlider id="backgroundAlphaSlider" name="backgroundAlpha" stepSize=".01" value="{_organizationChartStyles.backgroundAlpha}" change="styleInput_changeHandler(event)" minimum="0" maximum="1" width="200" />
+							<s:TextInput id="backgroundAlphaInput" name="backgroundAlpha" text="{_organizationChartStyles.backgroundAlpha}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Background color:" width="100%" />
+							<mx:ColorPicker id="backgroundColorInput" name="backgroundColor" selectedColor="{_organizationChartStyles.backgroundColor}" change="styleInput_changeHandler(event)" right="0" />
+							<mx:Spacer width="207" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Border alpha:" width="100%" />
+							<s:HSlider id="borderAlphaSlider" name="borderAlpha" stepSize=".01" value="{_organizationChartStyles.borderAlpha}" change="styleInput_changeHandler(event)" minimum="0" maximum="1" width="200" />
+							<s:TextInput id="borderAlphaInput" name="borderAlpha" text="{_organizationChartStyles.borderAlpha}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Border color:" width="100%" />
+							<mx:ColorPicker id="borderColorInput" name="borderColor" selectedColor="{_organizationChartStyles.borderColor}" change="styleInput_changeHandler(event)" right="0" />
+							<mx:Spacer width="207" />
+						</s:HGroup>
+						
+						<mx:Spacer width="100%" height="4" />
+						<s:Label text="Data Group Styles" styleName="styleHeader" width="100%" />
+						<s:Rect width="100%" height="1">
+							<s:stroke>
+								<s:SolidColorStroke color="#dddddd" />
+							</s:stroke>
+						</s:Rect>
+						<mx:Spacer width="100%" height="4" />
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Item renderer:" width="100%" />
+							<s:ComboBox id="itemRendererSelector" name="itemRendererSkin" labelField="label" selectedIndex="0" change="styleInput_changeHandler(event)" width="200"
+										dataProvider="{new ArrayCollection([{label:'default', value:OrganizationChartItemSkin},
+																			{label:'business', value:BusinessOrganizationChartItemSkin}])}"/>
+							<mx:Spacer width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Horizontal padding:" width="100%" />
+							<s:HSlider id="horizontalPaddingSlider" name="horizontalPadding" value="{_hierarchicalDataGroupStyles.horizontalPadding}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:TextInput id="horizontalPaddingInput" name="horizontalPadding" text="{_hierarchicalDataGroupStyles.horizontalPadding}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Vertical padding:" width="100%" />
+							<s:HSlider id="verticalPaddingSlider" name="verticalPadding" value="{_hierarchicalDataGroupStyles.verticalPadding}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:TextInput id="verticalPaddingInput" name="verticalPadding" text="{_hierarchicalDataGroupStyles.verticalPadding}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Item renderer minimized width:" width="100%" />
+							<s:HSlider id="irmwSlider" name="itemMinimizedWidth" value="{_hierarchicalDataGroupStyles.itemMinimizedWidth}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:TextInput id="irmwInput" name="itemMinimizedWidth" text="{_hierarchicalDataGroupStyles.itemMinimizedWidth}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Item renderer minimized height:" width="100%" />
+							<s:HSlider id="irmhSlider" name="itemMinimizedHeight" value="{_hierarchicalDataGroupStyles.itemMinimizedHeight}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:TextInput id="irmhInput" name="itemMinimizedHeight" text="{_hierarchicalDataGroupStyles.itemMinimizedHeight}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Item renderer normal width:" width="100%" />
+							<s:HSlider id="irnwSlider" name="itemNormalWidth" value="{_hierarchicalDataGroupStyles.itemNormalWidth}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:TextInput id="irnwInput" name="itemNormalWidth" text="{_hierarchicalDataGroupStyles.itemNormalWidth}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Item renderer normal height:" width="100%" />
+							<s:HSlider id="irnhSlider" name="itemNormalHeight" value="{_hierarchicalDataGroupStyles.itemNormalHeight}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:TextInput id="irnhInput" name="itemNormalHeight" text="{_hierarchicalDataGroupStyles.itemNormalHeight}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Item renderer maximized width:" width="100%" />
+							<s:HSlider id="irmxwSlider" name="itemMaximizedWidth" value="{_hierarchicalDataGroupStyles.itemMaximizedWidth}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:TextInput id="irmxwInput" name="itemMaximizedWidth" text="{_hierarchicalDataGroupStyles.itemMaximizedWidth}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Item renderer maximized height:" width="100%" />
+							<s:HSlider id="irmxhSlider" name="itemMaximizedHeight" value="{_hierarchicalDataGroupStyles.itemMaximizedHeight}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:TextInput id="irmxhInput" name="itemMaximizedHeight" text="{_hierarchicalDataGroupStyles.itemMaximizedHeight}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						
+						<mx:Spacer width="100%" height="4" />
+						<s:Label text="Generated CSS" styleName="styleHeader" width="100%" />
+						<s:Rect width="100%" height="1">
+							<s:stroke>
+								<s:SolidColorStroke color="#dddddd" />
+							</s:stroke>
+						</s:Rect>
+						<mx:Spacer width="100%" height="4" />
+						<s:TextArea id="cssOuput" editable="false" width="100%" minHeight="200" />
+					</s:VGroup>
+				</s:Scroller>
+			</s:Panel>
+			<s:Panel title="{'DataProvider (editable grid: '+_dataProvider.length+' items)'}" backgroundColor="#cccccc" dropShadowVisible="false" width="100%" height="100%">
+				<mx:DataGrid id="dataGrid" top="4" right="4" bottom="4" left="4" dataProvider="{_dataProvider}" editable="true" sortableColumns="false">
+					<mx:columns>
+						<mx:DataGridColumn dataField="id" editable="false" />
+						<mx:DataGridColumn dataField="ownerId" editable="true" />
+						<mx:DataGridColumn dataField="firstName" editable="true" />
+						<mx:DataGridColumn dataField="lastName" editable="true" />
+						<mx:DataGridColumn dataField="state" editable="true">
+							<mx:itemEditor>
+								<fx:Component>
+									<mx:ComboBox dataProvider="{new ArrayCollection([
+													 OrganizationChartItemState.MINIMIZED,
+													 OrganizationChartItemState.NORMAL,
+													 OrganizationChartItemState.MAXIMIZED
+												 ])}">
+										<fx:Script>
+											<![CDATA[
+												import cube.spark.components.supportClasses.OrganizationChartItemState;
+												
+												import mx.collections.ArrayCollection;
+											]]>
+										</fx:Script>
+									</mx:ComboBox>
+								</fx:Component>
+							</mx:itemEditor>
+						</mx:DataGridColumn>
+						<mx:DataGridColumn dataField="disconnected" editable="true">
+							<mx:itemEditor>
+								<fx:Component>
+									<mx:ComboBox selectedIndex="0" dataProvider="{new ArrayCollection([false,true])}" >
+										<fx:Script>
+											<![CDATA[
+												import mx.collections.ArrayCollection;
+											]]>
+										</fx:Script>
+									</mx:ComboBox>
+								</fx:Component>
+							</mx:itemEditor>
+						</mx:DataGridColumn>
+						<mx:DataGridColumn dataField="collapsed" editable="true">
+							<mx:itemEditor>
+								<fx:Component>
+									<mx:ComboBox selectedIndex="0" dataProvider="{new ArrayCollection([false,true])}" >
+										<fx:Script>
+											<![CDATA[
+												import mx.collections.ArrayCollection;
+											]]>
+										</fx:Script>
+									</mx:ComboBox>
+								</fx:Component>
+							</mx:itemEditor>
+						</mx:DataGridColumn>
+					</mx:columns>
+				</mx:DataGrid>
+			</s:Panel>
+		</mx:DividedBox>
+	</mx:DividedBox>
+</s:Application>

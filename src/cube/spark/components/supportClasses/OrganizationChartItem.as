@@ -44,6 +44,8 @@ package cube.spark.components.supportClasses {
 		private var _itemIndex:int;
 		private var _isMouseOver:Boolean = false;
 		private var _disconnected:Boolean = false;
+		private var _collapsed:Boolean = false;
+		private var _hasChildren:Boolean = false;
 		
 		[SkinPart(required="false")]
 		public var openButton:Button;
@@ -84,8 +86,29 @@ package cube.spark.components.supportClasses {
 			return _disconnected;
 		}
 		public function set disconnected(value:Boolean):void {
-			_disconnected = value;
+			if (_disconnected == value) { return; }
+			_data.disconnected = _disconnected = value;
 			dispatchEvent(new Event("disconnectedChange"));
+		}
+		
+		[Bindable("collapsedChange")]
+		public function get collapsed():Boolean {
+			return _collapsed;
+		}
+		public function set collapsed(value:Boolean):void {
+			if (_collapsed == value) { return; }
+			_data.collapsed = _collapsed = value;
+			dispatchEvent(new Event("collapsedChange"));
+		}
+		
+		[Bindable("hasChildrenChange")]
+		public function get hasChildren():Boolean {
+			return _hasChildren;
+		}
+		public function set hasChildren(value:Boolean):void {
+			if (_hasChildren == value) { return; }
+			_data.hasChildren = _hasChildren = value;
+			dispatchEvent(new Event("hasChildrenChange"));
 		}
 		
 		public function get dragging():Boolean {
@@ -167,6 +190,13 @@ package cube.spark.components.supportClasses {
 			super.setStyle(styleProp, newValue);
 		}
 		
+		override protected function partAdded(partName:String, instance:Object):void {
+			if (instance == openButton) {
+				openButton.addEventListener(MouseEvent.CLICK, openButton_clickHandler, false, 0, true);
+			}
+			super.partAdded(partName, instance);
+		}
+		
 		override protected function findSkinParts():void {
 			if (skin is IOrganizationChartItemSkin) {
 				(skin as IOrganizationChartItemSkin).entryPoint.addEventListener(
@@ -196,6 +226,11 @@ package cube.spark.components.supportClasses {
 			if (owner) {
 				(owner as HierarchicalDataGroup).invalidateConnectors();
 			}
+		}
+		
+		protected function openButton_clickHandler(event:MouseEvent):void {
+			event.stopPropagation();
+			collapsed = !collapsed;
 		}
 		
 		protected function move_updateHandler(event:EffectEvent):void {

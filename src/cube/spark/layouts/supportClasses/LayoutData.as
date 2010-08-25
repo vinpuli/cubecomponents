@@ -12,6 +12,8 @@ package cube.spark.layouts.supportClasses {
 		private var _listIndex:int;
 		private var _ownerListIndex:int;
 		private var _disconnected:Boolean;
+		private var _collapsed:Boolean;
+		private var _hasChildren:Boolean;
 		
 		public function get originalX():Number {
 			return _originalX;
@@ -91,6 +93,22 @@ package cube.spark.layouts.supportClasses {
 		
 		public function set disconnected(value:Boolean):void {
 			_disconnected = value;
+		}
+		
+		public function get collapsed():Boolean {
+			return _collapsed;
+		}
+		
+		public function set collapsed(value:Boolean):void {
+			_collapsed = value;
+		}
+		
+		public function get hasChildren():Boolean {
+			return _hasChildren;
+		}
+		
+		public function set hasChildren(value:Boolean):void {
+			_hasChildren = value;
 		}
 	}
 }

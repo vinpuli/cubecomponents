@@ -5,6 +5,7 @@ package cube.spark.layouts.supportClasses {
 	
 	public final class MemoryPointerCollection {
 		
+		private var _hasChildrenBytes:ByteArray;
 		private var _visibleItemsBytes:ByteArray;
 		private var _ownerVisibleItemsBytes:ByteArray;
 		private var _idBytes:ByteArray;
@@ -16,9 +17,11 @@ package cube.spark.layouts.supportClasses {
 		private var _maximizedWidthBytes:ByteArray;
 		private var _maximizedHeightBytes:ByteArray;
 		private var _stateBytes:ByteArray;
+		private var _collapsedBytes:ByteArray;
 		private var _xPosBytes:ByteArray;
 		private var _yPosBytes:ByteArray;
 		
+		private var _hasChildrenPointer:int;
 		private var _visibleItemsPointer:int;
 		private var _ownerVisibleItemsPointer:int;
 		private var _idPointer:int;
@@ -30,8 +33,17 @@ package cube.spark.layouts.supportClasses {
 		private var _maximizedWidthPointer:int;
 		private var _maximizedHeightPointer:int;
 		private var _statePointer:int;
+		private var _collapsedPointer:int;
 		private var _xPosPointer:int;
 		private var _yPosPointer:int;
+		
+		public function get hasChildrenBytes():ByteArray {
+			if (!_hasChildrenBytes) {
+				_hasChildrenBytes = new ByteArray();
+				_hasChildrenBytes.endian = Endian.LITTLE_ENDIAN;
+			}
+			return _hasChildrenBytes;
+		}
 		
 		public function get visibleItemsBytes():ByteArray {
 			if (!_visibleItemsBytes) {
@@ -121,6 +133,14 @@ package cube.spark.layouts.supportClasses {
 			return _stateBytes;
 		}
 		
+		public function get collapsedBytes():ByteArray {
+			if (!_collapsedBytes) {
+				_collapsedBytes = new ByteArray();
+				_collapsedBytes.endian = Endian.LITTLE_ENDIAN;
+			}
+			return _collapsedBytes;
+		}
+		
 		public function get xPosBytes():ByteArray {
 			if (!_xPosBytes) {
 				_xPosBytes = new ByteArray();
@@ -135,6 +155,14 @@ package cube.spark.layouts.supportClasses {
 				_yPosBytes.endian = Endian.LITTLE_ENDIAN;
 			}
 			return _yPosBytes;
+		}
+		
+		public function get hasChildrenPointer():int {
+			return _hasChildrenPointer;
+		}
+		
+		public function set hasChildrenPointer(value:int):void {
+			_hasChildrenPointer = value;
 		}
 		
 		public function get visibleItemsPointer():int {
@@ -225,6 +253,14 @@ package cube.spark.layouts.supportClasses {
 			_statePointer = value;
 		}
 		
+		public function get collapsedPointer():int {
+			return _collapsedPointer;
+		}
+		
+		public function set collapsedPointer(value:int):void {
+			_collapsedPointer = value;
+		}
+		
 		public function get xPosPointer():int {
 			return _xPosPointer;
 		}
@@ -254,6 +290,8 @@ package cube.spark.layouts.supportClasses {
 			stateBytes.clear();
 			xPosBytes.clear();
 			yPosBytes.clear();
+			collapsedBytes.clear();
+			hasChildrenBytes.clear();
 		}
 	}
 }

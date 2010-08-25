@@ -190,6 +190,8 @@ package cube.spark.components.supportClasses {
 			for (i=0; i<len; i++) {
 				item = target.getItemAt(i);
 				item.state = 0;
+				item.collapsed = false;
+				item.hasChildren = true;
 				item.minimizedWidth = getStyle("itemMinimizedWidth") as Number;
 				item.minimizedHeight = getStyle("itemMinimizedHeight") as Number;
 				item.normalWidth = getStyle("itemNormalWidth") as Number;
@@ -357,7 +359,8 @@ package cube.spark.components.supportClasses {
 						throw new Error("ItemRenderer does not implement IOrganizationChartItemRenderer");
 					} else {
 						item.addEventListener(MouseEvent.CLICK, item_clickHandler, false, 0, true);
-						item.addEventListener("disconnected", itemRenderer_disconnectedChangeHandler, false, 0, true);
+						item.addEventListener("disconnectedChange", itemRenderer_disconnectedChangeHandler, false, 0, true);
+						item.addEventListener("collapsedChange", itemRenderer_collapsedChangeHandler, false, 0, true);
 						item.visible = false;
 						item.data = {index:i, state:0};
 						addChildInternal(item as DisplayObject);
@@ -376,8 +379,13 @@ package cube.spark.components.supportClasses {
 			var layoutData:LayoutData;
 			var item:IOrganizationChartItemRenderer;
 			var i:int;
+			// temporarily remove binds
+			_dataProvider.removeEventListener(CollectionEvent.COLLECTION_CHANGE, dataProvider_collectionChangeHandler);
 			for (i=0; i<len; i++) {
 				item = _itemRenderers[i];
+				// temporarily remove binds
+				item.removeEventListener("disconnectedChange", itemRenderer_disconnectedChangeHandler);
+				item.removeEventListener("collapsedChange", itemRenderer_collapsedChangeHandler);
 				layoutData = _visibleItemsData[i];
 				if (_animationFlag) {
 					item.animateTo(layoutData.originalX, layoutData.originalY, layoutData.x, layoutData.y);
@@ -389,8 +397,13 @@ package cube.spark.components.supportClasses {
 				item.height = getStyle((layoutData.state == 0) ? "itemMinimizedHeight" : (layoutData.state == 1) ? "itemNormalHeight" : "itemMaximizedHeight");
 				item.data = layoutData;
 				item.disconnected = layoutData.disconnected;
+				item.collapsed = layoutData.collapsed;
+				item.hasChildren = layoutData.hasChildren;
 				item.setStyle("skinClass", (item.data.itemRendererSkin) ? item.data.itemRendererSkin : getStyle("itemRendererSkin"));
 				item.visible = true;
+				// re-initiate binds
+				item.addEventListener("disconnectedChange", itemRenderer_disconnectedChangeHandler, false, 0, true);
+				item.addEventListener("collapsedChange", itemRenderer_collapsedChangeHandler, false, 0, true);
 			}
 			for (i=len; i<tLen; i++) {
 				item = _itemRenderers[i];
@@ -399,39 +412,8 @@ package cube.spark.components.supportClasses {
 			_animationFlag = false;
 			dispatchEvent(new PropertyChangeEvent(PropertyChangeEvent.PROPERTY_CHANGE, false, false, PropertyChangeEventKind.UPDATE, "contentWidth", contentWidth, _hierarchicalLayout.measuredWidth, this));
 			dispatchEvent(new PropertyChangeEvent(PropertyChangeEvent.PROPERTY_CHANGE, false, false, PropertyChangeEventKind.UPDATE, "contentHeight", contentHeight, _hierarchicalLayout.measuredHeight, this));
-			/*if (layout)
-				layout.elementAdded(index);
-			
-			if (layout && layout.useVirtualLayout)
-			{
-				// Increment all of the indices in virtualRendererIndices that are >= index.
-				
-				if (virtualRendererIndices)
-				{
-					const virtualRendererIndicesLength:int = virtualRendererIndices.length;
-					for (var i:int = 0; i < virtualRendererIndicesLength; i++)
-					{
-						const vrIndex:int = virtualRendererIndices[i];
-						if (vrIndex >= index)
-							virtualRendererIndices[i] = vrIndex + 1;
-					}
-					
-					indexToRenderer.splice(index, 0, null); // shift items >= index to the right
-					// virtual ItemRenderer itself will be added lazily, by updateDisplayList()
-				}
-				
-				invalidateSize();
-				invalidateDisplayList();
-				return;
-			}
-			
-			var myItemRenderer:IVisualElement = createRendererForItem(item);
-			indexToRenderer.splice(index, 0, myItemRenderer);
-			addItemRendererToDisplayList(myItemRenderer as DisplayObject, index);
-			setUpItemRenderer(myItemRenderer, index, item);
-			dispatchEvent(new RendererExistenceEvent(
-				RendererExistenceEvent.RENDERER_ADD, false, false, 
-				myItemRenderer, index, item));*/
+			// re-initiate binds
+			_dataProvider.addEventListener(CollectionEvent.COLLECTION_CHANGE, dataProvider_collectionChangeHandler, false, 0, true);
 		}
 		
 		private function setupDefaultInheritingStyles():Boolean {
@@ -511,6 +493,13 @@ package cube.spark.components.supportClasses {
 		
 		private function itemRenderer_disconnectedChangeHandler(event:Event):void {
 			invalidateConnectors();
+		}
+		
+		private function itemRenderer_collapsedChangeHandler(event:Event):void {
+			const item:IOrganizationChartItemRenderer = event.currentTarget as IOrganizationChartItemRenderer;
+			_hierarchicalLayout.writeBytes(item.data, (item.data as LayoutData).listIndex);
+			triggerAnimationFlag();
+			invalidateLayout(LayoutUpdateType.STATUS);
 		}
 		
 		private function dataGroup_enterFrameHandler(event:Event):void {

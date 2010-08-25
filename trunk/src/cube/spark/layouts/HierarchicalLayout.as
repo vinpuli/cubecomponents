@@ -77,11 +77,17 @@ package cube.spark.layouts {
 			var property:String;
 			var ownerMemoryIndex:int;
 			var state:int;
-			var i:int;
+			var collapsed:int;
+			var hasChildren:int;
+			var i:int;trace(numVisibleItems);
 			for (i=0; i<numVisibleItems; i++) {
-				layoutData = new LayoutData();
 				_memory.position = _memoryPointerCollection.visibleItemsPointer+4*i;
 				memoryIndex = _memory.readInt();
+				layoutData = new LayoutData();
+				itemData = _list.getItemAt(memoryIndex);
+				for (property in itemData) {
+					layoutData[property] = itemData[property];
+				}
 				_memory.position = _memoryPointerCollection.ownerVisibleItemsPointer+4*i;
 				ownerMemoryIndex = _memory.readInt();
 				_memory.position = _memoryPointerCollection.idPointer+4*memoryIndex;
@@ -92,17 +98,19 @@ package cube.spark.layouts {
 				layoutData.x = _memory.readFloat();
 				_memory.position = _memoryPointerCollection.yPosPointer+4*memoryIndex;
 				layoutData.y = _memory.readFloat();
-				_memory.position = _memoryPointerCollection.statePointer+4*memoryIndex;
-				itemData = _list.getItemAt(memoryIndex);
-				for (property in itemData) {
-					layoutData[property] = itemData[property];
-				}
 				if (includeOldLayout) {
 					_snapshotXBytes.position = memoryIndex*4;
 					_snapshotYBytes.position = memoryIndex*4;
 					layoutData.originalX = _snapshotXBytes.readFloat();
 					layoutData.originalY = _snapshotYBytes.readFloat();
 				}
+				_memory.position = _memoryPointerCollection.hasChildrenPointer+4*memoryIndex;
+				hasChildren = _memory.readInt();
+				layoutData.hasChildren = (hasChildren == 1);
+				_memory.position = _memoryPointerCollection.collapsedPointer+4*memoryIndex;
+				collapsed = _memory.readInt();
+				layoutData.collapsed = (collapsed == 1);
+				_memory.position = _memoryPointerCollection.statePointer+4*memoryIndex;
 				layoutData.state = _memory.readInt();
 				layoutData.listIndex = memoryIndex;
 				layoutData.ownerListIndex = ownerMemoryIndex;
@@ -155,6 +163,7 @@ package cube.spark.layouts {
 				_memoryPointerCollection.maximizedWidthBytes.writeFloat(listItem.maximizedWidth);
 				_memoryPointerCollection.maximizedHeightBytes.writeFloat(listItem.maximizedHeight);
 				_memoryPointerCollection.stateBytes.writeInt(listItem.state);
+				_memoryPointerCollection.collapsedBytes.writeInt(listItem.collapsed ? 1 : 0);
 			}
 			_memory.position = _memoryPointerCollection.idPointer;
 			_memory.writeBytes(_memoryPointerCollection.idBytes);
@@ -174,6 +183,8 @@ package cube.spark.layouts {
 			_memory.writeBytes(_memoryPointerCollection.maximizedHeightBytes);
 			_memory.position = _memoryPointerCollection.statePointer;
 			_memory.writeBytes(_memoryPointerCollection.stateBytes);
+			_memory.position = _memoryPointerCollection.collapsedPointer;
+			_memory.writeBytes(_memoryPointerCollection.collapsedBytes);
 			_memoryPointerCollection.flush();
 		}
 		
@@ -185,10 +196,13 @@ package cube.spark.layouts {
 			_memory.writeInt(layoutData.ownerId);
 			_memory.position = _memoryPointerCollection.statePointer+4*listIndex;
 			_memory.writeInt(layoutData.state);
+			_memory.position = _memoryPointerCollection.collapsedPointer+4*listIndex;
+			_memory.writeInt(layoutData.collapsed ? 1 : 0);
 		}
 		
 		private function createMemoryPointers():void {
 			_memoryPointerCollection = new MemoryPointerCollection();
+			_memoryPointerCollection.hasChildrenPointer = _clib.getDataPointerForHasChildren();
 			_memoryPointerCollection.visibleItemsPointer = _clib.getDataPointerForVisibleItems();
 			_memoryPointerCollection.ownerVisibleItemsPointer = _clib.getDataPointerForOwnerVisibleItems();
 			_memoryPointerCollection.idPointer = _clib.getDataPointerForId();
@@ -200,6 +214,7 @@ package cube.spark.layouts {
 			_memoryPointerCollection.maximizedWidthPointer = _clib.getDataPointerForMaximizedWidth();
 			_memoryPointerCollection.maximizedHeightPointer = _clib.getDataPointerForMaximizedHeight();
 			_memoryPointerCollection.statePointer = _clib.getDataPointerForState();
+			_memoryPointerCollection.collapsedPointer = _clib.getDataPointerForCollapsed();
 			_memoryPointerCollection.xPosPointer = _clib.getDataPointerForXPos();
 			_memoryPointerCollection.yPosPointer = _clib.getDataPointerForYPos();
 		}

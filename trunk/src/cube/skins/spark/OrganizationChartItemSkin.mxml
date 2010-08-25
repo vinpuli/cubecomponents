@@ -4,7 +4,8 @@
 		xmlns:mx="library://ns.adobe.com/flex/mx"
 		xmlns:supportClasses="cube.spark.components.supportClasses.*"
 		xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
-		implements="cube.spark.components.supportClasses.IOrganizationChartItemSkin">
+		implements="cube.spark.components.supportClasses.IOrganizationChartItemSkin"
+		creationComplete="skin_creationCompleteHandler(event)">
 	<!-- host component -->
 	<fx:Metadata>
 		[HostComponent("cube.spark.components.supportClasses.OrganizationChartItem")]
@@ -13,6 +14,8 @@
 		<![CDATA[
 			import cube.spark.components.supportClasses.IOrganizationChartItemSkin;
 			
+			import mx.events.FlexEvent;
+			
 			public function get entryPoint():HierarchicalConnector {
 				return entryPointConnector;
 			}
@@ -20,10 +23,20 @@
 			public function get exitPoint():HierarchicalConnector {
 				return exitPointConnector;
 			}
+
+			protected function skin_creationCompleteHandler(event:FlexEvent):void {
+				hostComponent.addEventListener("collapsedChange", hostComponent_collapsedChangeHandler, false, 0, true);
+			}
+			
+			protected function hostComponent_collapsedChangeHandler(event:Event):void {
+				updateDisplayList(unscaledWidth, unscaledHeight);
+			}
+
 		]]>
 	</fx:Script>
 	<fx:Script fb:purpose="styling">
 		<![CDATA[ 
+			import mx.events.StateChangeEvent;
 			
 			/**
 			 *  @private
@@ -39,6 +52,7 @@
 				highlight.radiusX = cornerRadius;
 				border.radiusX = cornerRadius;
 				openButton.setStyle("cornerRadius", cornerRadius);
+				(openButton.skin as OrganizationChartItemButtonSkin).collapsed = hostComponent.collapsed;
 				
 				if (highlightStroke) highlightStroke.radiusX = cornerRadius;
 				if (hldownstroke1) hldownstroke1.radiusX = cornerRadius;
@@ -189,7 +203,8 @@
 	<!-- layer 8: text -->
 	<!--- @copy spark.components.supportClasses.ButtonBase#labelDisplay -->
 	<s:Button id="openButton" left="0" right="0" height="18" bottom="0" focusEnabled="false"
-			  skinClass="cube.skins.spark.OrganizationChartItemButtonSkin" />
+			  skinClass="cube.skins.spark.OrganizationChartItemButtonSkin"
+			  visible="{hostComponent.hasChildren}" />
 	<s:Label id="labelDisplay"
 			 text="{hostComponent.label}"
 			 textAlign="center"

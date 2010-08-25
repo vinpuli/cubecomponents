@@ -30,6 +30,9 @@ int* _data_memPos_id;
 int* _data_visibleItems;
 int* _data_ownerVisibleItems;
 int* _data_state;
+int* _data_collapsed;
+int* _data_visible;
+int* _data_hasChildren;
 float* _data_minimizedWidth;
 float* _data_minimizedHeight;
 float* _data_normalWidth;
@@ -67,6 +70,8 @@ static inline void reset() {
 				free(_processedNodes[i]);
 				_processedNodes[i] = (processedNode *)malloc(sizeof(processedNode));
 			}
+			_data_hasChildren[i] = 0;
+			_data_visible[i] = 0;
 			_data_xPos[i] = 0;
 			_data_yPos[i] = 0;
 			_data_memPos_id[_data_id[i]] = i;
@@ -86,12 +91,15 @@ AS3_Val flushBuffers(void* self, AS3_Val args) {
 		free(_data_maximizedWidth);
 		free(_data_maximizedHeight);
 		free(_data_state);
+		free(_data_collapsed);
 		free(_data_xPos);
 		free(_data_yPos);
 		free(_data_measuredWidth);
 		free(_data_measuredHeight);
 		free(_data_visibleItems);
 		free(_data_ownerVisibleItems);
+		free(_data_visible);
+		free(_data_hasChildren);
 		_hasOriginator = _initialized = FALSE;
 	}
 	return AS3_Int(0);
@@ -111,20 +119,27 @@ AS3_Val initializeBuffers(void* self, AS3_Val args) {
 		_data_maximizedWidth = calloc(_data_len, _FLOATSIZE);
 		_data_maximizedHeight = calloc(_data_len, _FLOATSIZE);
 		_data_state = calloc(_data_len, _INTSIZE);
+		_data_collapsed = calloc(_data_len, _INTSIZE);
+		_data_hasChildren = calloc(_data_len, _INTSIZE);
 		_data_xPos = calloc(_data_len, _FLOATSIZE);
 		_data_yPos = calloc(_data_len, _FLOATSIZE);
 		_data_measuredWidth = calloc(_data_len, _FLOATSIZE);
 		_data_measuredHeight = calloc(_data_len, _FLOATSIZE);
 		_data_visibleItems = calloc(_data_len, _INTSIZE);
 		_data_ownerVisibleItems = calloc(_data_len, _INTSIZE);
+		_data_visible = calloc(_data_len, _INTSIZE);
 		_processedNodes = (processedNode **)realloc(_processedNodes, _data_len * sizeof(processedNode *));
-		retVal = AS3_Int(_data_len*4*_INTSIZE+_data_len*10*_FLOATSIZE);
+		retVal = AS3_Int(_data_len*7*_INTSIZE+_data_len*10*_FLOATSIZE);
 		reset();
 		_initialized = TRUE;
 	} else {
 		retVal = AS3_Int(0);
 	}
 	return retVal;
+}
+
+AS3_Val getDataPointerForHasChildren(void* self, AS3_Val args) {
+	return AS3_Ptr(_data_hasChildren);
 }
 
 AS3_Val getDataPointerForVisibleItems(void* self, AS3_Val args) {
@@ -171,6 +186,10 @@ AS3_Val getDataPointerForState(void* self, AS3_Val args) {
 	return AS3_Ptr(_data_state);
 }
 
+AS3_Val getDataPointerForCollapsed(void* self, AS3_Val args) {
+	return AS3_Ptr(_data_collapsed);
+}
+
 AS3_Val getDataPointerForXPos(void* self, AS3_Val args) {
 	return AS3_Ptr(_data_xPos);
 }
@@ -206,41 +225,45 @@ static inline float2 map(int *memPos) {
 	dw = getItemSize(*memPos, TRUE);
 	dh = getItemSize(*memPos, FALSE);
 	hasChildren = FALSE;
-	if (_hasProcessedNodes) {
-		childIndex = _processedNodes[*memPos]->childLen;
-		for (i=0; i<childIndex; i++) {
-			childMemPos = _processedNodes[*memPos]->children[i];
-			mapVal = map(&childMemPos);
-			_data_measuredWidth[childMemPos] = mapVal.xVal;
-			_data_measuredHeight[childMemPos] = mapVal.yVal;
-			childrenMaxWidth += mapVal.xVal;
-			if (mapVal.yVal > childrenMaxHeight) {
-				childrenMaxHeight = mapVal.yVal;
-			}
-			hasChildren = TRUE;
-		}
-	} else {
-		originatorId = _data_id[*memPos];
-		startPos = *memPos+1;
-		childIndex = 0;
-		for (i=startPos; i<_data_len; i++) {
-			if (_data_ownerId[i] == originatorId) {
-				children[childIndex++] = i;
-				mapVal = map(&i);
-				_data_measuredWidth[i] = mapVal.xVal;
-				_data_measuredHeight[i] = mapVal.yVal;
+	childIndex = 0;
+	_data_visible[*memPos] = 1;
+	if (_data_collapsed[*memPos] == 0) {
+		if (_hasProcessedNodes) {
+			childIndex = _processedNodes[*memPos]->childLen;
+			for (i=0; i<childIndex; i++) {
+				childMemPos = _processedNodes[*memPos]->children[i];
+				mapVal = map(&childMemPos);
+				_data_measuredWidth[childMemPos] = mapVal.xVal;
+				_data_measuredHeight[childMemPos] = mapVal.yVal;
 				childrenMaxWidth += mapVal.xVal;
 				if (mapVal.yVal > childrenMaxHeight) {
 					childrenMaxHeight = mapVal.yVal;
 				}
 				hasChildren = TRUE;
-			} else if (hasChildren) { break; }
+			}
+		} else {
+			originatorId = _data_id[*memPos];
+			startPos = *memPos+1;
+			childIndex = 0;
+			for (i=startPos; i<_data_len; i++) {
+				if (_data_ownerId[i] == originatorId) {
+					children[childIndex++] = i;
+					mapVal = map(&i);
+					_data_measuredWidth[i] = mapVal.xVal;
+					_data_measuredHeight[i] = mapVal.yVal;
+					childrenMaxWidth += mapVal.xVal;
+					if (mapVal.yVal > childrenMaxHeight) {
+						childrenMaxHeight = mapVal.yVal;
+					}
+					hasChildren = TRUE;
+				} else if (hasChildren) { break; }
+			}
+			_processedNodes[*memPos]->childLen = childIndex;
+			_processedNodes[*memPos]->children = children;
 		}
-		_processedNodes[*memPos]->childLen = childIndex;
-		_processedNodes[*memPos]->children = children;
-	}
-	if (hasChildren) {
-		childrenMaxWidth += _horizontalPadding*(childIndex-1);
+		if (hasChildren) {
+			childrenMaxWidth += _horizontalPadding*(childIndex-1);
+		}
 	}
 	offset = (dw-childrenMaxWidth)*.5;
 	offsetX = _data_xPos[*memPos]+offset;
@@ -264,6 +287,7 @@ static inline float2 map(int *memPos) {
 		returnVal.xVal = dw;
 		returnVal.yVal = dh;
 	}
+	_data_hasChildren[*memPos] = (_processedNodes[*memPos]->childLen > 0) ? 1 : 0;
 	return returnVal;
 }
 
@@ -288,8 +312,9 @@ static inline float normalize(float dx) {
 
 static inline boolean isWithinVisibleArea(int memPos, double entryPointX, double entryPointY, double entryPointWidth, double entryPointHeight) {
 	if (memPos == _originator) { return TRUE; }
-	const float dx = _data_measuredWidth[memPos];//getItemSize(memPos, TRUE);
-	const float dy = entryPointHeight+getItemSize(memPos, FALSE);//_data_measuredHeight[memPos];//getItemSize(memPos, FALSE);
+	if (_data_visible[memPos] == 0) { return FALSE; }
+	const float dx = _data_measuredWidth[memPos];
+	const float dy = entryPointHeight+getItemSize(memPos, FALSE);
 	const float tx = _data_xPos[memPos]+getItemSize(memPos, TRUE)*.5-dx*.5;
 	const float ty = _data_yPos[memPos];
 	const float ux = tx+dx;
@@ -321,25 +346,27 @@ AS3_Val calculate(void* self, AS3_Val args) {
 	}
 	_hasProcessedNodes = TRUE;
 	for (i=0; i<_data_len; i++) {
-		ownerMemPos = _data_memPos_id[_data_ownerId[i]];
-		if (isWithinVisibleArea(ownerMemPos, entryPointX, entryPointY, entryPointWidth, entryPointHeight)) {
-			_data_visibleItems[j] = i;
-			_data_ownerVisibleItems[j] = ownerMemPos;
-			ownerMemPos = _data_memPos_id[_data_ownerId[ownerMemPos]];
-			j++;
-			if (!isWithinVisibleArea(ownerMemPos, entryPointX, entryPointY, entryPointWidth, entryPointHeight)) {
-				k = 0;
-				hasMatch = FALSE;
-				for (k=0; k<j; k++) {
-					if (_data_visibleItems[k] == ownerMemPos) {
-						hasMatch = TRUE;
-						break;
+		if (_data_visible[i]) {
+			ownerMemPos = _data_memPos_id[_data_ownerId[i]];
+			if (isWithinVisibleArea(ownerMemPos, entryPointX, entryPointY, entryPointWidth, entryPointHeight)) {
+				_data_visibleItems[j] = i;
+				_data_ownerVisibleItems[j] = ownerMemPos;
+				ownerMemPos = _data_memPos_id[_data_ownerId[ownerMemPos]];
+				j++;
+				if (!isWithinVisibleArea(ownerMemPos, entryPointX, entryPointY, entryPointWidth, entryPointHeight)) {
+					k = 0;
+					hasMatch = FALSE;
+					for (k=0; k<j; k++) {
+						if (_data_visibleItems[k] == ownerMemPos) {
+							hasMatch = TRUE;
+							break;
+						}
 					}
-				}
-				if (!hasMatch) {
-					_data_visibleItems[j] = ownerMemPos;
-					_data_ownerVisibleItems[j] = -1;
-					j++;
+					if (!hasMatch) {
+						_data_visibleItems[j] = ownerMemPos;
+						_data_ownerVisibleItems[j] = -1;
+						j++;
+					}
 				}
 			}
 		}
@@ -350,6 +377,7 @@ AS3_Val calculate(void* self, AS3_Val args) {
 int main() {
 	AS3_Val flushBuffersVal = AS3_Function(NULL, flushBuffers);
 	AS3_Val initializeBuffersVal = AS3_Function(NULL, initializeBuffers);
+	AS3_Val getDataPointerForHasChildrenVal = AS3_Function(NULL, getDataPointerForHasChildren);
 	AS3_Val getDataPointerForVisibleItemsVal = AS3_Function(NULL, getDataPointerForVisibleItems);
 	AS3_Val getDataPointerForOwnerVisibleItemsVal = AS3_Function(NULL, getDataPointerForOwnerVisibleItems);
 	AS3_Val getDataPointerForIdVal = AS3_Function(NULL, getDataPointerForId);
@@ -361,14 +389,16 @@ int main() {
 	AS3_Val getDataPointerForMaximizedWidthVal = AS3_Function(NULL, getDataPointerForMaximizedWidth);
 	AS3_Val getDataPointerForMaximizedHeightVal = AS3_Function(NULL, getDataPointerForMaximizedHeight);
 	AS3_Val getDataPointerForStateVal = AS3_Function(NULL, getDataPointerForState);
+	AS3_Val getDataPointerForCollapsedVal = AS3_Function(NULL, getDataPointerForCollapsed);
 	AS3_Val getDataPointerForXPosVal = AS3_Function(NULL, getDataPointerForXPos);
 	AS3_Val getDataPointerForYPosVal = AS3_Function(NULL, getDataPointerForYPos);
 	AS3_Val calculateVal = AS3_Function(NULL, calculate);
     AS3_Val result = AS3_Object(
-    	"flushBuffers:AS3ValType, initializeBuffers: AS3ValType, getDataPointerForVisibleItems:AS3ValType, getDataPointerForOwnerVisibleItems:AS3ValType, getDataPointerForId: AS3ValType, getDataPointerForOwnerId: AS3ValType, getDataPointerForMinimizedWidth: AS3ValType, getDataPointerForMinimizedHeight: AS3ValType, getDataPointerForNormalWidth: AS3ValType, getDataPointerForNormalHeight: AS3ValType, getDataPointerForMaximizedWidth: AS3ValType, getDataPointerForMaximizedHeight: AS3ValType, getDataPointerForState: AS3ValType, getDataPointerForXPos: AS3ValType, getDataPointerForYPos: AS3ValType, calculate: AS3ValType",
-    	flushBuffersVal, initializeBuffersVal, getDataPointerForVisibleItemsVal, getDataPointerForOwnerVisibleItemsVal, getDataPointerForIdVal, getDataPointerForOwnerIdVal, getDataPointerForMinimizedWidthVal, getDataPointerForMinimizedHeightVal, getDataPointerForNormalWidthVal, getDataPointerForNormalHeightVal, getDataPointerForMaximizedWidthVal, getDataPointerForMaximizedHeightVal, getDataPointerForStateVal, getDataPointerForXPosVal, getDataPointerForYPosVal, calculateVal);
+    	"flushBuffers:AS3ValType, initializeBuffers: AS3ValType, getDataPointerForHasChildren:AS3ValType, getDataPointerForVisibleItems:AS3ValType, getDataPointerForOwnerVisibleItems:AS3ValType, getDataPointerForId: AS3ValType, getDataPointerForOwnerId: AS3ValType, getDataPointerForMinimizedWidth: AS3ValType, getDataPointerForMinimizedHeight: AS3ValType, getDataPointerForNormalWidth: AS3ValType, getDataPointerForNormalHeight: AS3ValType, getDataPointerForMaximizedWidth: AS3ValType, getDataPointerForMaximizedHeight: AS3ValType, getDataPointerForState: AS3ValType, getDataPointerForCollapsed: AS3ValType, getDataPointerForXPos: AS3ValType, getDataPointerForYPos: AS3ValType, calculate: AS3ValType",
+    	flushBuffersVal, initializeBuffersVal, getDataPointerForHasChildrenVal, getDataPointerForVisibleItemsVal, getDataPointerForOwnerVisibleItemsVal, getDataPointerForIdVal, getDataPointerForOwnerIdVal, getDataPointerForMinimizedWidthVal, getDataPointerForMinimizedHeightVal, getDataPointerForNormalWidthVal, getDataPointerForNormalHeightVal, getDataPointerForMaximizedWidthVal, getDataPointerForMaximizedHeightVal, getDataPointerForStateVal, getDataPointerForCollapsedVal, getDataPointerForXPosVal, getDataPointerForYPosVal, calculateVal);
     AS3_Release(flushBuffersVal);
     AS3_Release(initializeBuffersVal);
+    AS3_Release(getDataPointerForHasChildrenVal);
     AS3_Release(getDataPointerForVisibleItemsVal);
     AS3_Release(getDataPointerForOwnerVisibleItemsVal);
     AS3_Release(getDataPointerForIdVal);
@@ -380,6 +410,7 @@ int main() {
     AS3_Release(getDataPointerForMaximizedWidthVal);
     AS3_Release(getDataPointerForMaximizedHeightVal);
     AS3_Release(getDataPointerForStateVal);
+    AS3_Release(getDataPointerForCollapsedVal);
     AS3_Release(getDataPointerForXPosVal);
     AS3_Release(getDataPointerForYPosVal);
     AS3_Release(calculateVal);

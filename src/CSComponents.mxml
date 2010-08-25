@@ -359,31 +359,83 @@
 								</fx:Component>
 							</mx:itemEditor>
 						</mx:DataGridColumn>
-						<mx:DataGridColumn dataField="disconnected" editable="true">
-							<mx:itemEditor>
+						<mx:DataGridColumn dataField="disconnected" editable="false">
+							<mx:itemRenderer>
 								<fx:Component>
-									<mx:ComboBox selectedIndex="0" dataProvider="{new ArrayCollection([false,true])}" >
+									<mx:CheckBox selected="false" change="disconnectedHandler_changeHandler(event)">
 										<fx:Script>
 											<![CDATA[
 												import mx.collections.ArrayCollection;
+												import mx.controls.DataGrid;
+												import mx.events.CollectionEvent;
+												import mx.events.CollectionEventKind;
+												import mx.events.PropertyChangeEvent;
+												import mx.events.PropertyChangeEventKind;
+												protected function disconnectedHandler_changeHandler(event:Event):void {
+													const dataGrid:DataGrid = owner as DataGrid;
+													dataGrid.selectedItem.disconnected = !dataGrid.selectedItem.disconnected;
+													dataGrid.dataProvider.dispatchEvent(
+														new CollectionEvent(
+															CollectionEvent.COLLECTION_CHANGE, 
+															false, false, 
+															CollectionEventKind.UPDATE, dataGrid.selectedIndex,
+															dataGrid.selectedIndex,
+															[
+																new PropertyChangeEvent(
+																	PropertyChangeEvent.PROPERTY_CHANGE, 
+																	false, false, 
+																	PropertyChangeEventKind.UPDATE, "disconnected",
+																	!dataGrid.selectedItem.disconnected, dataGrid.selectedItem.disconnected,
+																	dataGrid.selectedItem
+																)
+															]
+														)
+													);
+												}
 											]]>
 										</fx:Script>
-									</mx:ComboBox>
+									</mx:CheckBox>
 								</fx:Component>
-							</mx:itemEditor>
+							</mx:itemRenderer>
 						</mx:DataGridColumn>
-						<mx:DataGridColumn dataField="collapsed" editable="true">
-							<mx:itemEditor>
+						<mx:DataGridColumn dataField="collapsed" editable="false">
+							<mx:itemRenderer>
 								<fx:Component>
-									<mx:ComboBox selectedIndex="0" dataProvider="{new ArrayCollection([false,true])}" >
+									<mx:CheckBox selected="false" change="collapsedHandler_changeHandler(event)">
 										<fx:Script>
 											<![CDATA[
 												import mx.collections.ArrayCollection;
+												import mx.controls.DataGrid;
+												import mx.events.CollectionEvent;
+												import mx.events.CollectionEventKind;
+												import mx.events.PropertyChangeEvent;
+												import mx.events.PropertyChangeEventKind;
+												protected function collapsedHandler_changeHandler(event:Event):void {
+													const dataGrid:DataGrid = owner as DataGrid;
+													dataGrid.selectedItem.collapsed = !dataGrid.selectedItem.collapsed;
+													dataGrid.dataProvider.dispatchEvent(
+														new CollectionEvent(
+															CollectionEvent.COLLECTION_CHANGE, 
+															false, false, 
+															CollectionEventKind.UPDATE, dataGrid.selectedIndex,
+															dataGrid.selectedIndex,
+															[
+																new PropertyChangeEvent(
+																	PropertyChangeEvent.PROPERTY_CHANGE, 
+																	false, false, 
+																	PropertyChangeEventKind.UPDATE, "collapsed",
+																	!dataGrid.selectedItem.collapsed, dataGrid.selectedItem.collapsed,
+																	dataGrid.selectedItem
+																)
+															]
+														)
+													);
+												}
 											]]>
 										</fx:Script>
-									</mx:ComboBox>
+									</mx:CheckBox>
 								</fx:Component>
-							</mx:itemEditor>
+							</mx:itemRenderer>
 						</mx:DataGridColumn>
 					</mx:columns>
 				</mx:DataGrid>

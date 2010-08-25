@@ -531,7 +531,8 @@ package cube.spark.components.supportClasses {
 					layoutUpdateType = LayoutUpdateType.STATUS;
 					for (i=0; i<len; i++) {
 						propertyEvent = event.items[i] as PropertyChangeEvent;
-						if (propertyEvent.property != "state") {
+						if (propertyEvent.property == "id" ||
+							propertyEvent.property == "ownerId") {
 							layoutUpdateType = LayoutUpdateType.FULL;
 						}
 						listItem = propertyEvent.source;

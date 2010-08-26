@@ -38,6 +38,7 @@
 		components|OrganizationChart
 		{
 			data-group-style-name: dataGroup;
+			background-color: #000000;
 		}
 		
 		spark|OrganizationChartItemSkin
@@ -54,6 +55,12 @@
 		{
 			horizontal-padding: 20;
 			vertical-padding: 40;
+			item-minimized-width: 50;
+			item-minimized-height: 130;
+			item-normal-width: 120;
+			item-normal-height: 160;
+			item-maximized-width: 500;
+			item-maximized-height: 400;
 		}
 	</fx:Style>
 	<fx:Script>
@@ -139,6 +146,7 @@
 				const source:Array = new Array();
 				var possibleOwners:Array;
 				var rndIndex:Object;
+				var rnd:int;
 				var data:Object;
 				var i:int;
 				var nextID:int = 0;
@@ -157,19 +165,15 @@
 					firstName: _FIRST_NAMES[int(Math.random()*_FIRST_NAMES.length)],
 					lastName: _LAST_NAMES[int(Math.random()*_LAST_NAMES.length)],
 					disconnected:false});
-				while (source.length < 100) {
+				while (source.length < 10000) {
 					possibleOwners = new Array();
-					for (i=0; i<source.length; i++) {
-						data = source[i];
-						if (data.childCount < 3) {
-							possibleOwners.push({id:data.id, index:i});
-						}
-					}
+					rnd = int(Math.random()*source.length);
+					possibleOwners.push({id:source[rnd].id, index:rnd});
 					rndIndex = possibleOwners[Math.floor(Math.random()*possibleOwners.length)];
 					source.push({id:nextID++,
 								 ownerId: rndIndex.id,
 								 state: OrganizationChartItemState.MINIMIZED, childCount: 0,
-								 itemRendererSkin: null/*(1 == 1 || nextID%2==0) ? OrganizationChartItemSkin : BusinessOrganizationChartItemSkin*/,
+								 itemRendererSkin: BusinessOrganizationChartItemSkin,
 								 firstName: _FIRST_NAMES[int(Math.random()*_FIRST_NAMES.length)],
 								 lastName: _LAST_NAMES[int(Math.random()*_LAST_NAMES.length)],
 								 disconnected: false
@@ -231,7 +235,7 @@
 	</fx:Script>
 	<mx:DividedBox direction="horizontal" paddingLeft="6" paddingBottom="6" paddingRight="6" paddingTop="6" backgroundColor="0x888888" width="100%" height="100%">
 		<s:Panel title="Organization Chart Styles" backgroundColor="#cccccc" dropShadowVisible="false" width="100%" height="100%">
-			<components:OrganizationChart id="organizationChart" top="4" right="4" bottom="4" left="4" dataProvider="{_dataProvider}" />
+			<components:OrganizationChart id="organizationChart" backgroundColor="#333333" top="4" right="4" bottom="4" left="4" dataProvider="{_dataProvider}" />
 		</s:Panel>
 		<mx:DividedBox direction="vertical" backgroundColor="0x888888" width="100%" height="100%">
 			<s:Panel title="Organization Chart" backgroundColor="#eeeeee" dropShadowVisible="false" width="100%" height="100%">
@@ -401,11 +405,12 @@
 						<mx:DataGridColumn dataField="collapsed" editable="false">
 							<mx:itemRenderer>
 								<fx:Component>
-									<mx:CheckBox selected="false" change="collapsedHandler_changeHandler(event)">
+									<mx:CheckBox change="collapsedHandler_changeHandler(event)">
 										<fx:Script>
 											<![CDATA[
 												import mx.collections.ArrayCollection;
 												import mx.controls.DataGrid;
+												import mx.controls.dataGridClasses.*;
 												import mx.events.CollectionEvent;
 												import mx.events.CollectionEventKind;
 												import mx.events.PropertyChangeEvent;

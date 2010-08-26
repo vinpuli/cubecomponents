@@ -4,7 +4,8 @@
 		xmlns:mx="library://ns.adobe.com/flex/mx"
 		xmlns:supportClasses="cube.spark.components.supportClasses.*"
 		xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
-		implements="cube.spark.components.supportClasses.IOrganizationChartItemSkin">
+		implements="cube.spark.components.supportClasses.IOrganizationChartItemSkin"
+		creationComplete="skin_creationCompleteHandler(event)">
 	<!-- host component -->
 	<fx:Metadata>
 		[HostComponent("cube.spark.components.supportClasses.OrganizationChartItem")]
@@ -24,6 +25,16 @@
 	</fx:Script>
 	<fx:Script fb:purpose="styling">
 		<![CDATA[ 
+			import mx.events.FlexEvent;
+			import cube.skins.spark.OrganizationChartItemButtonSkin;
+			
+			protected function skin_creationCompleteHandler(event:FlexEvent):void {
+				hostComponent.addEventListener("collapsedChange", hostComponent_collapsedChangeHandler, false, 0, true);
+			}
+			
+			protected function hostComponent_collapsedChangeHandler(event:Event):void {
+				updateDisplayList(unscaledWidth, unscaledHeight);
+			}
 			
 			/**
 			 *  @private
@@ -33,266 +44,173 @@
 				var cr:Number = getStyle("cornerRadius");
 				
 				cornerRadius = cr;
+				openButton.setStyle("cornerRadius", cornerRadius);
+				(openButton.skin as BusinessOrganizationChartItemButtonSkin).collapsed = hostComponent.collapsed;
 				
 				super.updateDisplayList(unscaledWidth, unscaledHeight);
 			}
 			
+			[Bindable]
 			private var cornerRadius:Number = 12;
 		]]>        
 	</fx:Script>
 	<fx:Declarations>
-		<supportClasses:HierarchicalConnector id="entryPointConnector" orientation="left" viewport="{this}" x="0" y="50%" />
+		<supportClasses:HierarchicalConnector id="entryPointConnector" orientation="top" viewport="{this}" x="50%" y="0" />
 		<supportClasses:HierarchicalConnector id="exitPointConnector" orientation="bottom" viewport="{this}" x="50%" y="{hostComponent.height}" />
 	</fx:Declarations>
 	<s:states>
-		<s:State name="minimizedUp" stateGroups="up" />
-		<s:State name="normalUp" stateGroups="up" />
-		<s:State name="maximizedUp" stateGroups="up" />
-		<s:State name="minimizedOver" stateGroups="over" />
-		<s:State name="normalOver" stateGroups="over" />
-		<s:State name="maximizedOver" stateGroups="over" />
-		<s:State name="minimizedDown" stateGroups="down" />
-		<s:State name="normalDown" stateGroups="down" />
-		<s:State name="maximizedDown" stateGroups="down" />
-		<s:State name="minimizedDisabled" stateGroups="disabled" />
-		<s:State name="normalDisabled" stateGroups="disabled" />
-		<s:State name="maximizedDisabled" stateGroups="disabled" />
+		<s:State name="minimizedUp" stateGroups="up,minimized" />
+		<s:State name="normalUp" stateGroups="up,normal" />
+		<s:State name="maximizedUp" stateGroups="up,maximized" />
+		<s:State name="minimizedOver" stateGroups="over,minimized" />
+		<s:State name="normalOver" stateGroups="over,normal" />
+		<s:State name="maximizedOver" stateGroups="over,maximized" />
+		<s:State name="minimizedDown" stateGroups="down,minimized" />
+		<s:State name="normalDown" stateGroups="down,normal" />
+		<s:State name="maximizedDown" stateGroups="down,maximized" />
+		<s:State name="minimizedDisabled" stateGroups="disabled,minimized" />
+		<s:State name="normalDisabled" stateGroups="disabled,normal" />
+		<s:State name="maximizedDisabled" stateGroups="disabled,maximized" />
 	</s:states>
 	
-	<s:Graphic>
-		<s:Group scaleX="{hostComponent.width/434}" scaleY="{hostComponent.height/300}">
-			<s:Rect x="6.006927490234375" y="0" width="393.4532775878906" height="300" alpha="1" blendMode="normal" radiusX="20" radiusY="20">
-				<s:fill>
-					<s:LinearGradient x = "264" y = "0" scaleX = "400" rotation = "90">
-						<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-						<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-					</s:LinearGradient>
-				</s:fill>
-			</s:Rect>
-			<s:Path winding="evenOdd" data="M 15 0 C 7 0 0 7 0 15 C 0 15 0 28 0 28 C 8 29 14 35 14 43 C 14 43 14 238 14 238 C 14 246 8 252 0 253 C 0 253 0 285 0 285 C 0 293 7 300 15 300 C 15 300 390 300 390 300 C 399 300 405 293 405 285 C 405 285 405 253 405 253 C 398 252 392 246 392 238 C 392 238 392 43 392 43 C 392 35 398 29 405 28 C 405 28 405 15 405 15 C 405 7 399 0 390 0 C 390 0 15 0 15 0 Z " blendMode="normal" alpha="1">
-				<s:fill>
-					<s:SolidColor color="#8dc641"/>
-				</s:fill>
-			</s:Path>
-			<s:Path winding="evenOdd" data="M 0 253 C 0 253 0 271 0 271 L 405 271 C 405 271 405 253 405 253 C 398 252 392 246 392 238 C 392 238 392 233 392 233 L 14 233 C 14 233 14 238 14 238 C 14 246 8 252 0 253 Z " blendMode="darken" alpha="1">
-				<s:fill>
-					<s:LinearGradient x = "202" y = "276" scaleX = "38" rotation = "-90">
-						<s:GradientEntry color="#69962e" ratio="0" alpha="1"/>
-						<s:GradientEntry color="#8dc641" ratio="1" alpha="1"/>
-					</s:LinearGradient>
-				</s:fill>
-			</s:Path>
-			<s:Group alpha="0.34901960784313724">
-				<s:Path winding="evenOdd" data="M 67 61 C 67 61 69 49 69 49 C 70 51 72 57 73 60 C 73 60 67 61 67 61 Z M 56 82 C 56 82 60 85 60 85 C 60 85 62 84 62 84 C 68 77 58 69 76 68 C 77 71 78 74 79 77 C 81 80 90 89 89 80 C 89 73 73 32 66 32 C 66 33 65 33 64 33 C 59 36 54 74 56 82 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "72" y = "33" scaleX = "50" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 118 39 C 118 37 115 35 114 35 C 96 32 76 86 110 86 C 117 86 132 80 131 72 C 130 69 125 69 124 70 C 114 80 100 83 100 64 C 100 47 115 45 118 39 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "111" y = "36" scaleX = "48" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 174 74 C 171 75 179 81 179 82 C 179 82 181 81 181 81 C 187 75 182 37 179 29 C 179 29 175 26 175 26 C 175 26 173 27 173 27 C 169 32 166 57 159 64 C 158 60 158 56 156 53 C 154 46 149 37 143 47 C 143 48 146 63 138 72 C 121 75 142 97 150 66 C 150 70 154 74 157 76 C 165 79 172 57 173 53 C 173 53 174 74 174 74 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "157" y = "28" scaleX = "53" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 196 67 C 196 67 212 62 212 62 C 212 62 212 59 212 59 C 205 57 203 57 196 58 C 196 58 195 58 195 58 C 195 58 195 54 195 54 C 200 53 212 50 213 45 C 213 45 212 44 212 44 C 207 40 202 42 196 43 C 193 44 186 46 186 50 C 186 56 185 86 194 86 C 198 86 227 80 222 73 C 214 63 196 90 196 67 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "204" y = "43" scaleX = "41" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 262 72 C 256 59 270 55 272 48 C 272 46 267 43 265 43 C 257 45 252 57 251 64 C 246 95 284 79 270 72 C 269 72 265 73 262 72 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "262" y = "45" scaleX = "36" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 285 75 C 283 69 283 64 287 59 C 291 64 292 71 286 75 C 286 75 285 75 285 75 Z M 291 82 C 305 75 299 51 285 51 C 271 51 271 91 291 82 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "287" y = "52" scaleX = "29" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 320 50 C 320 56 318 60 312 62 C 313 57 315 53 319 50 C 319 50 320 50 320 50 Z M 312 71 C 319 75 340 81 345 73 C 345 73 345 71 345 71 C 343 66 331 66 325 64 C 334 43 324 30 309 52 C 294 33 303 108 315 85 C 315 85 315 83 315 83 C 313 79 312 75 312 71 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "323" y = "43" scaleX = "45" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 349 63 C 353 61 359 59 363 64 C 363 64 363 67 363 67 C 360 71 356 75 352 76 C 351 73 351 64 349 63 Z M 348 99 C 348 99 352 96 352 96 C 353 92 353 88 353 84 C 394 71 357 36 341 61 C 340 63 344 98 348 99 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "356" y = "54" scaleX = "43" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-			</s:Group>
-			<s:Group>
-				<s:Path winding="evenOdd" data="M 63 52 C 63 52 64 41 64 41 C 66 43 68 49 69 52 C 69 52 63 52 63 52 Z M 52 74 C 52 74 56 77 56 77 C 56 77 58 76 58 76 C 64 69 54 61 72 60 C 73 63 73 66 75 68 C 76 72 86 80 85 72 C 85 65 69 24 62 24 C 62 24 60 24 60 25 C 55 28 50 66 52 74 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "68" y = "25" scaleX = "50" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 114 31 C 114 29 111 27 110 26 C 92 24 72 78 106 78 C 112 78 128 72 126 64 C 126 61 121 61 119 62 C 110 71 96 75 96 56 C 96 38 111 36 114 31 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "107" y = "28" scaleX = "48" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 170 66 C 167 67 174 73 175 73 C 175 73 177 73 177 73 C 182 67 178 29 174 21 C 174 21 171 18 171 18 C 171 18 169 19 169 19 C 164 24 162 49 155 56 C 154 52 153 48 152 44 C 150 38 145 29 139 39 C 139 40 142 54 134 64 C 117 67 138 89 146 57 C 146 61 150 66 153 67 C 160 71 168 49 169 44 C 169 44 170 66 170 66 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "153" y = "20" scaleX = "53" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 192 59 C 192 59 208 53 208 53 C 208 53 208 50 208 50 C 201 48 198 49 191 50 C 191 50 191 49 191 49 C 191 49 191 46 191 46 C 196 45 208 42 209 37 C 209 37 208 35 208 35 C 203 32 198 34 192 35 C 189 36 181 38 181 42 C 181 48 181 78 190 78 C 194 78 223 72 217 65 C 210 55 192 81 192 59 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "200" y = "35" scaleX = "41" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 258 64 C 252 51 266 47 267 40 C 268 37 263 34 261 35 C 253 37 248 49 247 56 C 242 86 280 71 266 64 C 265 64 260 65 258 64 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "257" y = "36" scaleX = "36" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 281 66 C 279 61 279 56 282 51 C 286 55 288 63 282 66 C 282 66 281 66 281 66 Z M 286 73 C 300 67 294 43 281 43 C 267 43 267 83 286 73 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "283" y = "44" scaleX = "29" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 315 41 C 315 47 314 52 308 54 C 309 49 311 44 315 41 C 315 41 315 41 315 41 Z M 308 63 C 315 66 336 73 341 64 C 341 64 341 63 341 63 C 339 57 327 58 321 56 C 330 35 319 22 305 44 C 289 25 299 100 310 76 C 310 76 310 75 310 75 C 308 71 308 67 308 63 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "319" y = "35" scaleX = "45" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 344 54 C 349 53 355 51 358 56 C 358 56 358 59 358 59 C 356 63 352 67 347 68 C 347 64 347 56 344 54 Z M 344 90 C 344 90 348 88 348 88 C 349 84 349 80 349 76 C 390 63 353 28 337 53 C 336 55 340 90 344 90 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "352" y = "46" scaleX = "43" rotation = "90">
-							<s:GradientEntry color="#000000" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#666666" ratio="1" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-			</s:Group>
-			<s:Group>
-				<s:Path winding="evenOdd" data="M 65 43 C 66 46 67 48 68 51 C 68 51 64 51 64 51 C 64 51 65 43 65 43 Z M 64 41 L 62 52 L 63 53 L 69 52 C 69 52 69 51 69 51 C 68 48 67 43 65 41 C 65 41 64 41 64 41 Z M 55 77 C 55 77 56 77 56 77 C 66 75 53 62 71 60 C 73 66 76 76 83 76 C 83 76 84 76 84 76 C 89 68 68 23 62 23 C 53 23 51 61 51 67 C 51 70 51 72 51 74 C 51 74 52 74 52 74 L 55 77 Z M 56 76 C 56 76 53 73 53 73 C 52 71 52 69 52 67 C 52 61 55 24 62 24 C 67 24 87 67 83 75 C 77 74 74 64 72 59 C 72 59 72 59 72 59 C 62 60 60 63 59 68 C 59 71 60 75 56 76 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "68" y = "25" scaleX = "50" rotation = "90">
-							<s:GradientEntry color="#cccccc" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#000000" ratio="0.99" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 109 26 C 96 24 87 50 87 59 C 87 89 127 78 127 65 C 127 58 120 61 117 63 C 115 64 107 69 105 69 C 98 69 97 62 97 56 C 97 48 101 42 105 39 C 108 37 110 35 111 34 C 112 33 114 32 114 31 C 114 29 110 26 109 26 Z M 109 27 C 110 27 113 30 113 31 C 113 31 111 33 110 33 C 109 34 107 36 104 37 C 100 41 95 47 95 56 C 95 62 97 70 105 70 C 109 70 119 62 124 62 C 125 62 126 63 126 65 C 126 76 88 87 88 59 C 88 49 97 25 109 27 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "107" y = "28" scaleX = "48" rotation = "90">
-							<s:GradientEntry color="#cccccc" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#000000" ratio="0.99" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 168 67 L 169 68 L 174 74 L 175 74 L 177 74 C 177 74 177 74 177 74 C 184 67 178 28 175 20 C 175 20 175 20 175 20 L 171 17 C 171 17 171 17 171 17 C 167 19 164 27 162 35 C 161 40 158 50 155 54 C 154 49 151 34 144 34 C 138 34 139 41 139 45 C 138 51 138 58 133 63 C 116 66 137 90 146 61 C 148 64 151 69 155 69 C 161 69 167 54 168 49 C 168 49 169 66 169 66 L 168 67 Z M 170 67 L 170 66 L 171 66 L 170 44 C 170 44 168 44 168 44 C 167 49 161 67 155 67 C 151 67 147 61 147 58 C 147 58 146 57 146 57 C 142 73 134 75 131 73 C 127 71 126 66 134 65 C 134 65 134 65 134 65 C 141 57 140 49 140 41 C 140 38 141 35 144 35 C 150 35 153 52 154 56 C 154 56 156 56 156 56 C 162 49 165 22 171 19 C 171 19 174 21 174 21 C 177 29 182 66 176 72 C 176 72 175 72 175 72 L 170 67 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "153" y = "20" scaleX = "53" rotation = "90">
-							<s:GradientEntry color="#cccccc" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#000000" ratio="0.99" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 192 49 C 192 49 192 46 192 46 C 197 45 208 42 209 37 C 209 37 209 36 209 36 L 209 35 C 209 35 208 35 208 35 C 206 34 204 33 201 33 C 165 33 184 78 190 78 C 195 78 219 73 219 67 C 219 64 214 62 213 62 C 204 61 193 76 193 59 C 193 59 208 54 208 54 L 208 53 L 208 50 C 208 50 208 50 208 50 C 203 48 197 48 192 49 Z M 207 53 L 192 58 C 192 58 191 59 191 59 C 191 79 205 63 213 63 C 214 63 217 66 217 67 C 217 72 194 77 190 77 C 186 77 167 34 201 34 C 203 34 206 35 207 36 C 207 36 208 37 208 37 C 206 41 195 44 191 45 C 191 45 190 46 190 46 L 190 49 L 191 50 L 191 50 C 191 50 191 50 191 50 C 197 50 202 50 207 51 C 207 51 207 53 207 53 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "200" y = "35" scaleX = "41" rotation = "90">
-							<s:GradientEntry color="#cccccc" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#000000" ratio="0.99" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 261 50 C 263 47 268 43 268 39 C 268 36 264 34 261 34 C 251 34 245 54 245 61 C 245 81 270 75 270 68 C 270 62 262 64 258 63 C 255 57 258 53 261 50 Z M 260 49 C 256 52 254 57 257 64 C 257 64 258 65 258 65 C 260 65 268 63 268 68 C 268 73 247 79 247 61 C 247 54 253 36 261 36 C 264 36 267 37 267 39 C 267 43 262 47 260 49 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "257" y = "36" scaleX = "36" rotation = "90">
-							<s:GradientEntry color="#cccccc" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#000000" ratio="0.99" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 283 52 C 286 56 286 62 282 66 C 282 66 282 66 282 66 C 280 61 280 56 283 52 Z M 282 51 C 278 55 278 61 280 67 C 280 67 281 67 281 67 L 282 67 C 282 67 283 67 283 67 C 288 63 287 55 283 50 C 283 50 282 51 282 51 Z M 283 42 C 276 41 270 47 270 59 C 270 84 295 78 295 60 C 295 50 289 43 283 42 Z M 283 44 C 288 44 294 51 294 60 C 294 76 272 82 272 59 C 272 47 277 43 283 44 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "283" y = "44" scaleX = "29" rotation = "90">
-							<s:GradientEntry color="#cccccc" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#000000" ratio="0.99" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 315 43 C 314 47 313 51 309 53 C 310 49 312 45 315 43 Z M 309 55 C 314 52 316 47 316 41 C 316 41 315 41 315 41 L 315 41 C 315 41 315 41 315 41 C 310 44 308 49 307 54 C 307 54 309 55 309 55 Z M 342 65 C 342 65 342 64 342 64 C 342 57 327 57 322 56 C 326 46 326 37 322 33 C 318 29 312 32 304 43 C 304 43 301 40 301 40 C 301 40 300 40 300 40 C 292 40 297 82 306 82 C 308 82 312 77 311 75 C 310 71 309 68 309 64 C 317 68 336 74 342 65 Z M 340 64 C 335 72 316 66 308 62 C 308 62 307 63 307 63 C 307 67 309 71 310 75 C 310 77 307 80 306 80 C 302 80 299 71 298 61 C 297 57 297 47 299 43 C 299 42 300 41 300 41 C 300 41 304 44 304 44 C 304 44 305 44 305 44 C 313 32 319 31 321 34 C 324 37 324 46 320 56 C 320 56 321 57 321 57 C 325 58 340 58 340 64 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "319" y = "35" scaleX = "45" rotation = "90">
-							<s:GradientEntry color="#cccccc" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#000000" ratio="0.99" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-				<s:Path winding="evenOdd" data="M 358 56 C 358 56 358 59 358 59 C 355 62 352 66 348 67 C 348 63 347 57 346 55 C 350 53 355 52 358 56 Z M 359 55 C 355 50 348 52 344 54 C 344 54 344 55 344 55 C 346 57 346 65 347 68 C 347 68 347 68 347 68 C 353 68 356 63 359 59 C 359 59 359 59 359 59 L 359 56 C 359 56 359 55 359 55 Z M 348 88 C 348 88 348 88 348 88 C 349 84 350 80 349 76 C 379 67 369 43 351 43 C 324 43 341 90 344 91 C 344 91 345 91 345 91 L 348 88 Z M 347 87 C 347 87 344 89 344 89 C 343 88 339 78 338 67 C 336 55 339 45 351 45 C 367 45 377 66 348 75 C 348 75 348 76 348 76 C 348 80 348 83 347 87 Z " blendMode="normal" alpha="1">
-					<s:fill>
-						<s:LinearGradient x = "352" y = "46" scaleX = "43" rotation = "90">
-							<s:GradientEntry color="#cccccc" ratio="0" alpha="1"/>
-							<s:GradientEntry color="#000000" ratio="0.99" alpha="1"/>
-						</s:LinearGradient>
-					</s:fill>
-				</s:Path>
-			</s:Group>
-			<s:Rect x="147.92041015625" y="106" width="109.62628173828125" height="109.5" alpha="1" blendMode="normal" radiusX="10" radiusY="10">
-				<s:fill>
-					<s:SolidColor color="#333333"/>
-				</s:fill>
-			</s:Rect>
-			<s:Rect x="149.42214965820312" y="107.5" width="106.62283325195312" height="106.5" alpha="1" blendMode="normal" radiusX="8" radiusY="8">
-				<s:fill>
-					<s:LinearGradient x = "121" y = "43" scaleX = "142" rotation = "90">
-						<s:GradientEntry color="#cccccc" ratio="0" alpha="1"/>
-						<s:GradientEntry color="#ffffff" ratio="1" alpha="1"/>
-					</s:LinearGradient>
-				</s:fill>
-			</s:Rect>
-		</s:Group>
-	</s:Graphic>
+	<s:Rect left="0" right="0" top="0" bottom="0" radiusX="{cornerRadius}" radiusY="{cornerRadius}" includeIn="maximized">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#333333" ratio="0" alpha=".5"/>
+				<s:GradientEntry color="#666666" ratio="1" alpha=".5"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left.maximized="15" right.maximized="15" top.maximized="15" bottom.maximized="15"
+			radiusX="{cornerRadius}" radiusY="{cornerRadius}"
+			left="0" right="0" top="0" bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke color="#333333" alpha="1" />
+		</s:stroke>
+	</s:Rect>
+	
+	<s:Rect left.maximized="16" right.maximized="16" top.maximized="16" bottom.maximized="16"
+			radiusX.maximized="{cornerRadius-1}" radiusY.maximized="{cornerRadius-1}"
+			radiusX="{cornerRadius-2}" radiusY="{cornerRadius-2}"
+			left="1" right="1" top="1" bottom="1">
+		<s:fill>
+			<s:SolidColor color="#ffffff" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left.maximized="18" right.maximized="18" top.maximized="18" bottom.maximized="18"
+			left="2" right="2" top="2" bottom="2"
+			radiusX="{cornerRadius-3}" radiusY="{cornerRadius-3}">
+		<s:fill>
+			<s:SolidColor color="#333333" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left.maximized="20" right.maximized="20" top.maximized="19" bottom.maximized="19" 
+			left="4" right="4" top="3" bottom="3"
+			radiusX="{cornerRadius-5}" radiusY="{cornerRadius-4}">
+		<s:fill>
+			<s:SolidColor color="#000000" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left.maximized="22" right.maximized="22" top.maximized="20" bottom.maximized="20" includeIn="maximized"
+			left="6" right="6" top="4" bottom="4"
+			radiusX="{cornerRadius-6}" radiusY="{cornerRadius-5}">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#999999" ratio="0" alpha="1"/>
+				<s:GradientEntry color="#000000" ratio="1" alpha="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left.maximized="22" right.maximized="22" top.maximized="20" includeIn="maximized"
+			left="6" right="6" top="4" height="22"
+			topLeftRadiusX="{cornerRadius-6}" topRightRadiusX="{cornerRadius-6}" 
+			topLeftRadiusY="{cornerRadius-5}" topRightRadiusY="{cornerRadius-5}">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#666666" ratio="0" alpha="1"/>
+				<s:GradientEntry color="#999999" ratio="1" alpha="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left.maximized="22" right.maximized="22" bottom.maximized="47" height="22" includeIn="maximized"
+			left="6" right="6" bottom="47">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#0f0f0f" ratio="0" alpha="1"/>
+				<s:GradientEntry color="#2b2b2b" ratio="1" alpha="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left.maximized="22" right.maximized="22" bottom.maximized="43" height="4"
+			left="6" right="6" bottom="28">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#666666" ratio="0" alpha="1"/>
+				<s:GradientEntry color="#333333" ratio="1" alpha="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left.maximized="22" right.maximized="22" bottom.maximized="41" height="2"
+			left="6" right="6" bottom="26">
+		<s:fill>
+			<s:SolidColor color="#ff3300" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left="142" right="42" top="52" height="1" includeIn="maximized">
+		<s:fill>
+			<s:SolidColor color="#ff9900" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left="142" right="42" top="53" height="97" includeIn="maximized">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#ff3300" ratio="0" alpha="1"/>
+				<s:GradientEntry color="#696969" ratio="1" alpha="1"/>
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Rect left="43" top="52" width="98" height="98" includeIn="maximized">
+		<s:fill>
+			<s:SolidColor color="#ffffff" alpha="1" />
+		</s:fill>
+	</s:Rect>
+	
+	<mx:Image source="http://mlam83.files.wordpress.com/2007/10/bill-gates.thumbnail.jpg" width="98" height="98" left="43" top="52" includeIn="maximized" />
+	
+	<mx:DataGrid left="43" bottom="70" right="43" height="160" includeIn="maximized" />
+	
+	<s:Rect left="42" top="51" width="100" height="100" includeIn="maximized">
+		<s:stroke>
+			<s:SolidColorStroke color="#000000" alpha="1" />
+		</s:stroke>
+	</s:Rect>
+	
+	<s:Button id="openButton" left="2" right="2" height="24" bottom="2" focusEnabled="false"
+			  left.maximized="20" right.maximized="20" bottom.maximized="19"
+			  cornerRadius="{cornerRadius-4}"
+			  skinClass="cube.skins.spark.business.BusinessOrganizationChartItemButtonSkin"
+			  visible="{hostComponent.hasChildren}" />
+	<s:Label id="labelDisplay"
+			 color="#ffffff"
+			 text="{hostComponent.label}"
+			 textAlign="center"
+			 verticalAlign="middle"
+			 maxDisplayedLines="1"
+			 rotation="0"
+			 rotation.minimized="90"
+			 horizontalCenter="-1"
+			 left="2" right="2" top="6" bottom="30">
+	</s:Label>
+	
 </s:Skin>

@@ -85,6 +85,7 @@ package cube.spark.components.supportClasses {
 		private var _itemRendererFieldOrFunctionChanged:Boolean = true;
 		private var _itemRenderers:Vector.<IOrganizationChartItemRenderer>;
 		private var _animationFlag:Boolean = false;
+		private var _pendingUpdateType:int = 0;
 		
 		public function HierarchicalDataGroup():void {
 			addEventListener(FlexEvent.CREATION_COMPLETE, onCreationComplete, false, 0, true);
@@ -176,7 +177,7 @@ package cube.spark.components.supportClasses {
 							layoutData[styleName] = newValue;
 						}
 						_hierarchicalLayout.flushAndFillMemory();
-						invalidateLayout(LayoutUpdateType.FULL);
+						invalidateLayout(LayoutUpdateType.STATUS);
 						break;
 				}
 			}
@@ -202,29 +203,34 @@ package cube.spark.components.supportClasses {
 		}
 		
 		public function invalidateLayout(updateType:int):void {
-			const horizontalPadding:Number = getStyle("horizontalPadding") as Number;
-			const verticalPadding:Number = getStyle("verticalPadding") as Number;
-			var timer:int = getTimer();
-			if (_hierarchicalLayout) {
-				_visibleItemsData = _hierarchicalLayout.calculateArea(
-					new Rectangle(
-						horizontalScrollPosition,
-						verticalScrollPosition, 
-						width, 
-						height
-					),
-					horizontalPadding, verticalPadding, _animationFlag, updateType);
-			}
-			trace("Alchemy in "+(getTimer()-timer)+" ms");
-			renderViewableItemsOnly();
-			invalidateConnectors();
-			trace("Rendering in "+(getTimer()-timer)+" ms");
+			_pendingUpdateType = (updateType > _pendingUpdateType) ? updateType : _pendingUpdateType;
+			addEventListener(Event.ENTER_FRAME, dataGroup_invalidateHandler, false, 0, true);
 		}
 		
 		public function invalidateConnectors():void {
 			if (!hasEventListener(Event.ENTER_FRAME)) {
 				addEventListener(Event.ENTER_FRAME, dataGroup_enterFrameHandler, false, 0, true);
 			}
+		}
+		
+		protected function delayedInvalidateLayout():void {
+			const horizontalPadding:Number = getStyle("horizontalPadding") as Number;
+			const verticalPadding:Number = getStyle("verticalPadding") as Number;
+			const area:Rectangle = new Rectangle(
+				horizontalScrollPosition,
+				verticalScrollPosition, 
+				width, 
+				height
+			);
+			var timer:int = getTimer();
+			if (_hierarchicalLayout) {
+				_visibleItemsData = _hierarchicalLayout.calculateArea(area, horizontalPadding, verticalPadding, _animationFlag, _pendingUpdateType);
+			}
+			trace("Alchemy in "+(getTimer()-timer)+" ms");
+			_pendingUpdateType = 0;
+			renderViewableItemsOnly();
+			invalidateConnectors();
+			trace("Rendering in "+(getTimer()-timer)+" ms");
 		}
 		
 		protected function updateConnectors():void {
@@ -274,6 +280,10 @@ package cube.spark.components.supportClasses {
 								if (Math.abs(item.x+connectorEntry.x-ownerItem.x-ownerConnectorExit.x-offsetH) < offsetH) {
 									directionFlag = 2;
 								}
+							} else if (connectorEntry.orientation == ConnectorOrientation.RIGHT) {
+								if (Math.abs(item.x+connectorEntry.x-ownerItem.x-ownerConnectorExit.x+offsetH) < offsetH) {
+									directionFlag = 2;
+								}
 							}
 							path.moveTo((ownerItem.x+ownerConnectorExit.x), (ownerItem.y+ownerConnectorExit.y));
 							switch (ownerConnectorExit.orientation) {
@@ -303,6 +313,19 @@ package cube.spark.components.supportClasses {
 									path.lineTo((item.x+connectorEntry.x-offsetH+curve), (item.y+connectorEntry.y));
 									path.lineTo((item.x+connectorEntry.x), (item.y+connectorEntry.y));
 									break;
+								case ConnectorOrientation.RIGHT :
+									if (directionFlag == 0) {
+										path.lineTo((item.x+connectorEntry.x+offsetH+curve), (ownerItem.y+ownerItem.height+offsetV));
+										path.curveTo((item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV+curve));
+									} else if (directionFlag == 1) {
+										path.lineTo((item.x+connectorEntry.x+offsetH-curve), (ownerItem.y+ownerItem.height+offsetV));
+										path.curveTo((item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV+curve));
+									}
+									path.lineTo((item.x+connectorEntry.x+offsetH), (item.y+connectorEntry.y-curve));
+									path.curveTo((item.x+connectorEntry.x+offsetH), (item.y+connectorEntry.y), (item.x+connectorEntry.x+offsetH-curve), (item.y+connectorEntry.y));
+									path.lineTo((item.x+connectorEntry.x+offsetH-curve), (item.y+connectorEntry.y));
+									path.lineTo((item.x+connectorEntry.x), (item.y+connectorEntry.y));
+									break;
 								case ConnectorOrientation.TOP :
 									if (directionFlag == 0) {
 										path.lineTo((item.x+connectorEntry.x+curve), (ownerItem.y+ownerItem.height+offsetV));
@@ -322,7 +345,7 @@ package cube.spark.components.supportClasses {
 				}
 			}
 			g.clear();
-			g.lineStyle(2, 0xcccccc, 1, true, LineScaleMode.NONE, CapsStyle.NONE, JointStyle.MITER, 3);
+			g.lineStyle(2, 0xcccccc, 1, true, LineScaleMode.NONE, CapsStyle.NONE, JointStyle.MITER, 0);
 			g.drawPath(path.commands, path.data);
 		}
 		
@@ -378,6 +401,8 @@ package cube.spark.components.supportClasses {
 			const tLen:int = _itemRenderers.length;
 			var layoutData:LayoutData;
 			var item:IOrganizationChartItemRenderer;
+			var dw:Number;
+			var dh:Number;
 			var i:int;
 			// temporarily remove binds
 			_dataProvider.removeEventListener(CollectionEvent.COLLECTION_CHANGE, dataProvider_collectionChangeHandler);
@@ -393,8 +418,10 @@ package cube.spark.components.supportClasses {
 					item.x = layoutData.x;
 					item.y = layoutData.y;
 				}
-				item.width = getStyle((layoutData.state == 0) ? "itemMinimizedWidth" : (layoutData.state == 1) ? "itemNormalWidth" : "itemMaximizedWidth");
-				item.height = getStyle((layoutData.state == 0) ? "itemMinimizedHeight" : (layoutData.state == 1) ? "itemNormalHeight" : "itemMaximizedHeight");
+				dw = getStyle((layoutData.state == 0) ? "itemMinimizedWidth" : (layoutData.state == 1) ? "itemNormalWidth" : "itemMaximizedWidth");
+				dh = getStyle((layoutData.state == 0) ? "itemMinimizedHeight" : (layoutData.state == 1) ? "itemNormalHeight" : "itemMaximizedHeight");
+				item.width = dw;
+				item.height = dh;
 				item.data = layoutData;
 				item.disconnected = layoutData.disconnected;
 				item.collapsed = layoutData.collapsed;
@@ -503,8 +530,13 @@ package cube.spark.components.supportClasses {
 		}
 		
 		private function dataGroup_enterFrameHandler(event:Event):void {
-			updateConnectors();
 			removeEventListener(Event.ENTER_FRAME, dataGroup_enterFrameHandler);
+			updateConnectors();
+		}
+		
+		private function dataGroup_invalidateHandler(event:Event):void {
+			removeEventListener(Event.ENTER_FRAME, dataGroup_invalidateHandler);
+			delayedInvalidateLayout();
 		}
 		
 		override mx_internal function dataProvider_collectionChangeHandler(event:CollectionEvent):void {
@@ -548,6 +580,7 @@ package cube.spark.components.supportClasses {
 				triggerAnimationFlag();
 			}
 			invalidateLayout(layoutUpdateType);
+			invalidateConnectors();
 		}
 		
 		private function onCreationComplete(event:FlexEvent):void {

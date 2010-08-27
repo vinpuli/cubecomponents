@@ -201,7 +201,7 @@
 					firstName: _FIRST_NAMES[int(Math.random()*_FIRST_NAMES.length)],
 					lastName: _LAST_NAMES[int(Math.random()*_LAST_NAMES.length)],
 					disconnected:false, itemRendererSkin: BusinessOrganizationChartItemSkin, image:_IMAGES[int(Math.random()*_IMAGES.length)]});
-				while (source.length < 1000) {
+				while (source.length < 5000) {
 					possibleOwners = new Array();
 					rnd = int(Math.random()*source.length);
 					possibleOwners.push({id:source[rnd].id, index:rnd});

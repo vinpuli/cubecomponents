@@ -9,6 +9,7 @@ package cube.spark.events {
 		public static const ITEM_MINIMIZE_STATE:String = "itemMinimizeState";
 		public static const ITEM_NORMAL_STATE:String = "itemNormalState";
 		public static const ITEM_MAXIMIZE_STATE:String = "itemMaximizeState";
+		public static const DATA_GROUP_READY:String = "dataGroupReady";
 		
 		private var _listIndex:int;
 		private var _itemRenderer:IOrganizationChartItemRenderer;

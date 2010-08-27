@@ -1,10 +1,13 @@
 package cube.spark.utils {
 	
 	import cube.skins.spark.OrganizationChartItemSkin;
+	import cube.spark.components.supportClasses.HierarchicalDataGroup;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.utils.getQualifiedClassName;
+	
+	import styleExplorerClasses.StyleExplorerEvent;
 	
 	[Event(name="styleChanged", type="flash.events.Event")]
 	
@@ -31,9 +34,21 @@ package cube.spark.utils {
 		[Bindable("styleChanged")]
 		public var itemMaximizedHeight:Number = 120;
 		
+		public function HierarchicalDataGroupStyles(target:HierarchicalDataGroup):void {
+			itemRendererSkin = target.getStyle("itemRendererSkin");
+			horizontalPadding = target.getStyle("horizontalPadding");
+			verticalPadding = target.getStyle("verticalPadding");
+			itemMinimizedWidth = target.getStyle("itemMinimizedWidth");
+			itemMinimizedHeight = target.getStyle("itemMinimizedHeight");
+			itemNormalWidth = target.getStyle("itemNormalWidth");
+			itemNormalHeight = target.getStyle("itemNormalHeight");
+			itemMaximizedWidth = target.getStyle("itemMaximizedWidth");
+			itemMaximizedHeight = target.getStyle("itemMaximizedHeight");
+		}
+		
 		public function setStyle(propertyName:String, value:*):void {
 			this[propertyName] = _customStyles[propertyName] = value;
-			dispatchEvent(new Event("styleChanged"));
+			dispatchEvent(new StyleExplorerEvent(StyleExplorerEvent.STYLE_CHANGED, propertyName, value));
 		}
 		
 		public function toCSS():String {
@@ -44,7 +59,7 @@ package cube.spark.utils {
 			for (propertyName in _customStyles) {
 				if (propertyName == "itemRendererSkin") {
 					const className:String = getQualifiedClassName(_customStyles[propertyName]);
-					output += "\t"+propertyName+": "+className.split("::")[1]+";\r";
+					output += "\t"+propertyName+": ClassReference(\""+className.split("::").join(".")+"\");\r";
 				} else {
 					output += "\t"+propertyName+": "+_customStyles[propertyName]+";\r";
 				}

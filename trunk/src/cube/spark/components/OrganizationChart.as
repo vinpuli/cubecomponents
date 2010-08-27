@@ -2,6 +2,7 @@ package cube.spark.components {
 	
 	import cube.skins.spark.OrganizationChartSkin;
 	import cube.spark.components.supportClasses.HierarchicalDataGroup;
+	import cube.spark.events.OrganizationChartEvent;
 	import cube.spark.layouts.supportClasses.LayoutUpdateType;
 	
 	import flash.events.Event;
@@ -16,6 +17,8 @@ package cube.spark.components {
 	
 	import spark.components.Scroller;
 	import spark.components.SkinnableContainer;
+	
+	[Event(name="dataGroupReady", type="cube.spark.events.OrganizationChartEvent")]
 	
 	[Style(name="dataGroupStyleName", type="String", inherit="no")]
 	
@@ -76,6 +79,7 @@ package cube.spark.components {
 						dataGroup.styleManager.setStyleDeclaration("cube.spark.components.supportClasses.HierarchicalDataGroup", dataGroupStyleDeclaration, true);
 					}
 				}
+				dispatchEvent(new OrganizationChartEvent(OrganizationChartEvent.DATA_GROUP_READY, 0, null));
 			} else if (instance == scroller) {
 				scroller.horizontalScrollBar.addEventListener(Event.CHANGE, scroller_changeHandler, false, 0, true);
 				scroller.verticalScrollBar.addEventListener(Event.CHANGE, scroller_changeHandler, false, 0, true);

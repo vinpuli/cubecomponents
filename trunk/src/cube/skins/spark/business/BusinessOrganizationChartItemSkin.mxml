@@ -14,6 +14,8 @@
 		<![CDATA[
 			import cube.spark.components.supportClasses.IOrganizationChartItemSkin;
 			
+			import mx.collections.ArrayCollection;
+			
 			public function get entryPoint():HierarchicalConnector {
 				return entryPointConnector;
 			}
@@ -95,7 +97,7 @@
 			radiusX="{cornerRadius-2}" radiusY="{cornerRadius-2}"
 			left="1" right="1" top="1" bottom="1">
 		<s:fill>
-			<s:SolidColor color="#ffffff" alpha="1" />
+			<s:SolidColor color="#ffffff" color.over="#ff9900" alpha="1" />
 		</s:fill>
 	</s:Rect>
 	
@@ -186,15 +188,29 @@
 		</s:fill>
 	</s:Rect>
 	
-	<mx:Image source="http://mlam83.files.wordpress.com/2007/10/bill-gates.thumbnail.jpg" width="98" height="98" left="43" top="52" includeIn="maximized" />
-	
-	<mx:DataGrid left="43" bottom="70" right="43" height="160" includeIn="maximized" />
-	
 	<s:Rect left="42" top="51" width="100" height="100" includeIn="maximized">
 		<s:stroke>
 			<s:SolidColorStroke color="#000000" alpha="1" />
 		</s:stroke>
 	</s:Rect>
+	
+	<mx:Image source="{hostComponent.data.image}"
+			  width="98" height="98" left="43" top="52" includeIn="maximized"
+			  mouseEnabled="false"
+			  mouseChildren="false"/>
+	
+	<mx:DataGrid id="dataGrid" left="43" bottom="70" right="43" height="160" includeIn="maximized" dataProvider="{new ArrayCollection([hostComponent.data])}" >
+		<mx:columns>
+			<mx:DataGridColumn dataField="id" editable="false" />
+			<mx:DataGridColumn dataField="ownerId" editable="false" />
+			<mx:DataGridColumn dataField="firstName" editable="false" />
+			<mx:DataGridColumn dataField="lastName" editable="false" />
+			<mx:DataGridColumn dataField="state" editable="false" />
+			<mx:DataGridColumn dataField="disconnected" editable="false" />
+			<mx:DataGridColumn dataField="collapsed" editable="false" />
+			<mx:DataGridColumn dataField="image" editable="false" />
+		</mx:columns>
+	</mx:DataGrid>
 	
 	<s:Button id="openButton" left="2" right="2" height="24" bottom="2" focusEnabled="false"
 			  left.maximized="20" right.maximized="20" bottom.maximized="19"
@@ -205,12 +221,19 @@
 			 color="#ffffff"
 			 text="{hostComponent.label}"
 			 textAlign="center"
+			 textAlign.maximized="right"
 			 verticalAlign="middle"
+			 verticalAlign.maximized="bottom"
 			 maxDisplayedLines="1"
+			 mouseEnabled="false"
+			 mouseChildren="false"
 			 rotation="0"
 			 rotation.minimized="90"
-			 horizontalCenter="-1"
-			 left="2" right="2" top="6" bottom="30">
+			 horizontalCenter.minimized="-1" horizontalCenter.normal="-1"
+			 fontSize="12"
+			 fontSize.maximized="36"
+			 left="2" right="2" top="6" bottom.minimized="30" bottom.normal="30"
+			 left.maximized="146" right.maximized="46" top.maximized="84">
 	</s:Label>
 	
 </s:Skin>

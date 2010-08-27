@@ -14,6 +14,26 @@
 		@namespace spark "cube.skins.spark.*";
 		@namespace business "cube.skins.spark.business.*";
 		
+		mx|DataGrid {
+			alternatingItemColors: #000000, #333333;
+			horizontalGridLines: false;
+			verticalGridLines: false;
+			useRollOver: true;
+			textSelectedColor: #ffffff;
+			rollOverColor: #ff9900;
+			textRollOverColor: #ffffff;
+			borderColor: #000000;
+			selectionColor: #ffcc00;
+			color: #808080;
+			headerStyleName: "mydataGridHeaderStyle";
+			headerBackgroundSkin: ClassReference("styleExplorerClasses.DataGridHeaderBackgroundSkin");
+		}
+		
+		.mydataGridHeaderStyle {
+			color: #ffffff;
+			
+		}
+		
 		.global
 		{
 			font-family:"Arial,Verdana,Helvetica";
@@ -61,6 +81,7 @@
 			item-normal-height: 160;
 			item-maximized-width: 500;
 			item-maximized-height: 400;
+			item-renderer-skin: ClassReference("cube.skins.spark.business.BusinessOrganizationChartItemSkin");
 		}
 	</fx:Style>
 	<fx:Script>
@@ -69,22 +90,27 @@
 			import cube.skins.spark.OrganizationChartSkin;
 			import cube.skins.spark.business.BusinessOrganizationChartItemSkin;
 			import cube.spark.components.supportClasses.OrganizationChartItemState;
+			import cube.spark.events.OrganizationChartEvent;
 			import cube.spark.utils.HierarchicalDataGroupStyles;
 			import cube.spark.utils.OrganizationChartStyles;
 			
 			import mx.collections.ArrayCollection;
 			import mx.core.UIComponent;
 			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
 			import mx.events.ListEvent;
 			
 			import spark.skins.spark.DefaultComplexItemRenderer;
 			
+			import styleExplorerClasses.DataGridHeaderBackgroundSkin;
+			import styleExplorerClasses.StyleExplorerEvent;
+			
 			[Bindable]
 			private var _dataProvider:ArrayCollection;
 			[Bindable]
-			private var _organizationChartStyles:OrganizationChartStyles = new OrganizationChartStyles();
+			private var _organizationChartStyles:OrganizationChartStyles;
 			[Bindable]
-			private var _hierarchicalDataGroupStyles:HierarchicalDataGroupStyles = new HierarchicalDataGroupStyles();
+			private var _hierarchicalDataGroupStyles:HierarchicalDataGroupStyles;
 			
 			private var _FIRST_NAMES:Array = [
 				"Albert", "Alan", "Amy", "Anna", "Anthony", "Alvin", "Anouchka", "Anita",
@@ -139,14 +165,24 @@
 				"Zamora"
 			];
 			
+			private var _IMAGES:Array = [
+				"http://www.frankula.com/various/organogram/images/bigshotA.png",
+				"http://www.frankula.com/various/organogram/images/bigshotB.png",
+				"http://www.frankula.com/various/organogram/images/bigshotC.png",
+				"http://www.frankula.com/various/organogram/images/bigshotD.png",
+				"http://www.frankula.com/various/organogram/images/bigshotE.png",
+				"http://www.frankula.com/various/organogram/images/bigshotF.png",
+				"http://www.frankula.com/various/organogram/images/bigshotG.png",
+				"http://www.frankula.com/various/organogram/images/bigshotH.png",
+				"http://www.frankula.com/various/organogram/images/bigshotI.png",
+				"http://www.frankula.com/various/organogram/images/bigshotJ.png"
+			];
+			
 			private function getTestData():void {
-				_organizationChartStyles.addEventListener("styleChanged", styleObject_styleChangedHandler, false, 0, true);
-				_hierarchicalDataGroupStyles.addEventListener("styleChanged", styleObject_styleChangedHandler, false, 0, true);
-				
 				const source:Array = new Array();
 				var possibleOwners:Array;
 				var rndIndex:Object;
-				var rnd:int;
+				var rnd:int;DataGridHeaderBackgroundSkin
 				var data:Object;
 				var i:int;
 				var nextID:int = 0;
@@ -164,8 +200,8 @@
 				source.push({id:nextID++, ownerId:-1, state:OrganizationChartItemState.MINIMIZED, childCount:0,
 					firstName: _FIRST_NAMES[int(Math.random()*_FIRST_NAMES.length)],
 					lastName: _LAST_NAMES[int(Math.random()*_LAST_NAMES.length)],
-					disconnected:false});
-				while (source.length < 10000) {
+					disconnected:false, itemRendererSkin: BusinessOrganizationChartItemSkin, image:_IMAGES[int(Math.random()*_IMAGES.length)]});
+				while (source.length < 1000) {
 					possibleOwners = new Array();
 					rnd = int(Math.random()*source.length);
 					possibleOwners.push({id:source[rnd].id, index:rnd});
@@ -173,10 +209,9 @@
 					source.push({id:nextID++,
 								 ownerId: rndIndex.id,
 								 state: OrganizationChartItemState.MINIMIZED, childCount: 0,
-								 itemRendererSkin: BusinessOrganizationChartItemSkin,
 								 firstName: _FIRST_NAMES[int(Math.random()*_FIRST_NAMES.length)],
 								 lastName: _LAST_NAMES[int(Math.random()*_LAST_NAMES.length)],
-								 disconnected: false
+								 disconnected: false, image:_IMAGES[int(Math.random()*_IMAGES.length)]
 					});
 					source[rndIndex.index].childCount++;
 				}
@@ -211,31 +246,38 @@
 				}
 			}
 			
-			protected function styleObject_styleChangedHandler(event:Event):void {
+			protected function styleObject_styleChangedHandler(event:StyleExplorerEvent):void {
 				cssOuput.text = '@namespace s "library://ns.adobe.com/flex/spark";\r@namespace mx "library://ns.adobe.com/flex/mx";\r@namespace components "cube.spark.components.*";\r@namespace spark "cube.skins.spark.*";\r@namespace business "cube.skins.spark.business.*";\r\r' +
 								_organizationChartStyles.toCSS()+"\r\r"+_hierarchicalDataGroupStyles.toCSS();
 				
-				organizationChart.setStyle("backgroundAlpha", _organizationChartStyles.backgroundAlpha);
-				organizationChart.setStyle("backgroundColor", _organizationChartStyles.backgroundColor);
-				organizationChart.setStyle("borderAlpha", _organizationChartStyles.borderAlpha);
-				organizationChart.setStyle("borderColor", _organizationChartStyles.borderColor);
-				
-				organizationChart.dataGroup.setStyle("itemRendererSkin", _hierarchicalDataGroupStyles.itemRendererSkin);
-				organizationChart.dataGroup.setStyle("horizontalPadding", _hierarchicalDataGroupStyles.horizontalPadding);
-				organizationChart.dataGroup.setStyle("verticalPadding", _hierarchicalDataGroupStyles.verticalPadding);
-				organizationChart.dataGroup.setStyle("itemMinimizedWidth", _hierarchicalDataGroupStyles.itemMinimizedWidth);
-				organizationChart.dataGroup.setStyle("itemMinimizedHeight", _hierarchicalDataGroupStyles.itemMinimizedHeight);
-				organizationChart.dataGroup.setStyle("itemNormalWidth", _hierarchicalDataGroupStyles.itemNormalWidth);
-				organizationChart.dataGroup.setStyle("itemNormalHeight", _hierarchicalDataGroupStyles.itemNormalHeight);
-				organizationChart.dataGroup.setStyle("itemMaximizedWidth", _hierarchicalDataGroupStyles.itemMaximizedWidth);
-				organizationChart.dataGroup.setStyle("itemMaximizedHeight", _hierarchicalDataGroupStyles.itemMaximizedHeight);
+				if (event.currentTarget == _organizationChartStyles) {
+					organizationChart.setStyle(event.property, event.value);
+				} else if (event.currentTarget == _hierarchicalDataGroupStyles) {
+					organizationChart.dataGroup.setStyle(event.property, event.value);
+				}
+			}
+
+
+			protected function organizationChart_creationCompleteHandler(event:FlexEvent):void {
+				_organizationChartStyles = new OrganizationChartStyles(organizationChart);
+				_organizationChartStyles.addEventListener(StyleExplorerEvent.STYLE_CHANGED, styleObject_styleChangedHandler, false, 0, true);
+			}
+
+
+			protected function organizationChart_dataGroupReadyHandler(event:OrganizationChartEvent):void {
+				_hierarchicalDataGroupStyles = new HierarchicalDataGroupStyles(organizationChart.dataGroup);
+				_hierarchicalDataGroupStyles.addEventListener(StyleExplorerEvent.STYLE_CHANGED, styleObject_styleChangedHandler, false, 0, true);
 			}
 
 		]]>
 	</fx:Script>
 	<mx:DividedBox direction="horizontal" paddingLeft="6" paddingBottom="6" paddingRight="6" paddingTop="6" backgroundColor="0x888888" width="100%" height="100%">
 		<s:Panel title="Organization Chart Styles" backgroundColor="#cccccc" dropShadowVisible="false" width="100%" height="100%">
-			<components:OrganizationChart id="organizationChart" backgroundColor="#333333" top="4" right="4" bottom="4" left="4" dataProvider="{_dataProvider}" />
+			<components:OrganizationChart id="organizationChart" backgroundColor="#333333"
+										  top="4" right="4" bottom="4" left="4"
+										  dataProvider="{_dataProvider}"
+										  creationComplete="organizationChart_creationCompleteHandler(event)"
+										  dataGroupReady="organizationChart_dataGroupReadyHandler(event)"/>
 		</s:Panel>
 		<mx:DividedBox direction="vertical" backgroundColor="0x888888" width="100%" height="100%">
 			<s:Panel title="Organization Chart" backgroundColor="#eeeeee" dropShadowVisible="false" width="100%" height="100%">
@@ -279,7 +321,7 @@
 						<mx:Spacer width="100%" height="4" />
 						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
 							<s:Label text="Item renderer:" width="100%" />
-							<s:ComboBox id="itemRendererSelector" name="itemRendererSkin" labelField="label" selectedIndex="0" change="styleInput_changeHandler(event)" width="200"
+							<s:ComboBox id="itemRendererSelector" name="itemRendererSkin" labelField="label" selectedIndex="1" change="styleInput_changeHandler(event)" width="200"
 										dataProvider="{new ArrayCollection([{label:'default', value:OrganizationChartItemSkin},
 																			{label:'business', value:BusinessOrganizationChartItemSkin}])}"/>
 							<mx:Spacer width="30" />
@@ -316,12 +358,12 @@
 						</s:HGroup>
 						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
 							<s:Label text="Item renderer maximized width:" width="100%" />
-							<s:HSlider id="irmxwSlider" name="itemMaximizedWidth" value="{_hierarchicalDataGroupStyles.itemMaximizedWidth}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:HSlider id="irmxwSlider" name="itemMaximizedWidth" value="{_hierarchicalDataGroupStyles.itemMaximizedWidth}" change="styleInput_changeHandler(event)" minimum="0" maximum="400" width="200" />
 							<s:TextInput id="irmxwInput" name="itemMaximizedWidth" text="{_hierarchicalDataGroupStyles.itemMaximizedWidth}" change="styleInput_changeHandler(event)" width="30" />
 						</s:HGroup>
 						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
 							<s:Label text="Item renderer maximized height:" width="100%" />
-							<s:HSlider id="irmxhSlider" name="itemMaximizedHeight" value="{_hierarchicalDataGroupStyles.itemMaximizedHeight}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:HSlider id="irmxhSlider" name="itemMaximizedHeight" value="{_hierarchicalDataGroupStyles.itemMaximizedHeight}" change="styleInput_changeHandler(event)" minimum="0" maximum="400" width="200" />
 							<s:TextInput id="irmxhInput" name="itemMaximizedHeight" text="{_hierarchicalDataGroupStyles.itemMaximizedHeight}" change="styleInput_changeHandler(event)" width="30" />
 						</s:HGroup>
 						
@@ -344,6 +386,7 @@
 						<mx:DataGridColumn dataField="ownerId" editable="true" />
 						<mx:DataGridColumn dataField="firstName" editable="true" />
 						<mx:DataGridColumn dataField="lastName" editable="true" />
+						<mx:DataGridColumn dataField="image" editable="true" />
 						<mx:DataGridColumn dataField="state" editable="true">
 							<mx:itemEditor>
 								<fx:Component>

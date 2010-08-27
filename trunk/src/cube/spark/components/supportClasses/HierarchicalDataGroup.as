@@ -40,6 +40,7 @@ package cube.spark.components.supportClasses {
 	import spark.components.ComboBox;
 	import spark.components.DataGroup;
 	import spark.components.IItemRendererOwner;
+	import spark.components.supportClasses.Skin;
 	import spark.components.supportClasses.SkinnableComponent;
 	import spark.effects.Resize;
 	import spark.effects.easing.Bounce;
@@ -61,6 +62,7 @@ package cube.spark.components.supportClasses {
 	[Style(name="itemNormalHeight", type="Number", format="Length", inherit="yes")]
 	[Style(name="itemMaximizedWidth", type="Number", format="Length", inherit="yes")]
 	[Style(name="itemMaximizedHeight", type="Number", format="Length", inherit="yes")]
+	[Style(name="itemRendererSkin", type="Class", inherit="yes")]
 	[Style(name="horizontalPadding", type="Number", format="Length", inherit="yes")]
 	[Style(name="verticalPadding", type="Number", format="Length", inherit="yes")]
 	
@@ -89,7 +91,6 @@ package cube.spark.components.supportClasses {
 		
 		public function HierarchicalDataGroup():void {
 			addEventListener(FlexEvent.CREATION_COMPLETE, onCreationComplete, false, 0, true);
-			itemRenderer = new ClassFactory(OrganizationChartItem);
 		}
 		
 		override public function get contentWidth():Number {
@@ -367,6 +368,10 @@ package cube.spark.components.supportClasses {
 			const maxItemsH:int = int(int(width/minItemWidth)+1);
 			const maxItemsV:int = int(height/minItemHeight);
 			const numItemRenderers:int = _visibleItemsData.length;
+			if (!itemRenderer) {
+				itemRenderer = getStyle("itemRenderer");
+				if (!itemRenderer) { itemRenderer = new ClassFactory(OrganizationChartItem); }
+			}
 			if (!_connectorCanvas) {
 				_connectorCanvas = new UIComponent();
 				addChildInternal(_connectorCanvas);
@@ -444,17 +449,21 @@ package cube.spark.components.supportClasses {
 		}
 		
 		private function setupDefaultInheritingStyles():Boolean {
-			const styleDeclaration:CSSStyleDeclaration = new CSSStyleDeclaration(new CSSSelector("cube.spark.components.supportClasses.HierarchicalDataGroup"), styleManager);
-			styleDeclaration.defaultFactory = function():void {
-				this.itemRendererSkin = OrganizationChartItemSkin;
-				this.itemMinimizedWidth = 30;
-				this.itemMinimizedHeight = 80;
-				this.itemNormalWidth = 60;
-				this.itemNormalHeight = 100;
-				this.itemMaximizedWidth = 160;
-				this.itemMaximizedHeight = 120;
-				this.horizontalPadding = 60;
-				this.verticalPadding = 60;
+			if (!styleManager.getStyleDeclaration("cube.spark.components.supportClasses.HierarchicalDataGroup")) {
+				const styleDeclaration:CSSStyleDeclaration = new CSSStyleDeclaration(new CSSSelector("cube.spark.components.supportClasses.HierarchicalDataGroup"), styleManager);
+				styleDeclaration.defaultFactory = function():void {
+					this.itemRenderer = new ClassFactory(OrganizationChartItem);
+					this.itemRendererSkin = OrganizationChartItemSkin;
+					this.itemMinimizedWidth = 30;
+					this.itemMinimizedHeight = 80;
+					this.itemNormalWidth = 60;
+					this.itemNormalHeight = 100;
+					this.itemMaximizedWidth = 160;
+					this.itemMaximizedHeight = 120;
+					this.horizontalPadding = 60;
+					this.verticalPadding = 60;
+				}
+				styleManager.setStyleDeclaration("cube.spark.components.supportClasses.HierarchicalDataGroup", styleDeclaration, true);
 			}
 			return true;
 		}
@@ -498,6 +507,9 @@ package cube.spark.components.supportClasses {
 		}
 		
 		private function item_clickHandler(event:MouseEvent):void {
+			if (!(event.target is Skin)) {
+				return;
+			}
 			const item:IOrganizationChartItemRenderer = event.currentTarget as IOrganizationChartItemRenderer;
 			const layoutData:LayoutData = item.data as LayoutData;
 			const relatedItem:Object = _dataProvider.getItemAt(layoutData.listIndex);
@@ -590,6 +602,7 @@ package cube.spark.components.supportClasses {
 				_hierarchicalLayout.list = _dataProvider;
 				invalidateLayout(LayoutUpdateType.FULL);
 			}
+			removeEventListener(FlexEvent.CREATION_COMPLETE, onCreationComplete);
 			addEventListener(ResizeEvent.RESIZE, hierarchicalDataGroup_resizeHandler, false, 0, true);
 		}
 	}

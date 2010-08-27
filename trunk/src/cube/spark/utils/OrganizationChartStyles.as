@@ -1,7 +1,16 @@
 package cube.spark.utils {
 	
+	import cube.spark.components.OrganizationChart;
+	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+	
+	import mx.core.FlexGlobals;
+	import mx.core.UIComponent;
+	import mx.styles.CSSStyleDeclaration;
+	import mx.styles.StyleManager;
+	
+	import styleExplorerClasses.StyleExplorerEvent;
 	
 	[Event(name="styleChanged", type="flash.events.Event")]
 	
@@ -20,9 +29,17 @@ package cube.spark.utils {
 		[Bindable("styleChanged")]
 		public var dataGroupStyleName:String;
 		
+		public function OrganizationChartStyles(target:OrganizationChart):void {
+			backgroundColor = target.getStyle("backgroundColor");
+			backgroundAlpha = target.getStyle("backgroundAlpha");
+			borderColor = target.getStyle("borderColor");
+			borderAlpha = target.getStyle("borderAlpha");
+			dataGroupStyleName = target.getStyle("dataGroupStyleName");
+		}
+		
 		public function setStyle(propertyName:String, value:*):void {
 			this[propertyName] = _customStyles[propertyName] = value;
-			dispatchEvent(new Event("styleChanged"));
+			dispatchEvent(new StyleExplorerEvent(StyleExplorerEvent.STYLE_CHANGED, propertyName, value));
 		}
 		
 		public function toCSS():String {

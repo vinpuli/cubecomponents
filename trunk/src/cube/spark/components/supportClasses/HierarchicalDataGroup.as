@@ -390,6 +390,7 @@ package cube.spark.components.supportClasses {
 						item.addEventListener("disconnectedChange", itemRenderer_disconnectedChangeHandler, false, 0, true);
 						item.addEventListener("collapsedChange", itemRenderer_collapsedChangeHandler, false, 0, true);
 						item.visible = false;
+						item.includeInLayout = false;
 						item.data = {index:i, state:0};
 						addChildInternal(item as DisplayObject);
 						dispatchEvent(new RendererExistenceEvent(RendererExistenceEvent.RENDERER_ADD, false, false, item, i, {state:0}));

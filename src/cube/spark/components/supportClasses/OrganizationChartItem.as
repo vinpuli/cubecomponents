@@ -230,6 +230,7 @@ package cube.spark.components.supportClasses {
 		
 		protected function openButton_clickHandler(event:MouseEvent):void {
 			event.stopPropagation();
+			event.stopImmediatePropagation();
 			collapsed = !collapsed;
 		}
 		

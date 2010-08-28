@@ -21,6 +21,8 @@ package cube.spark.components {
 	[Event(name="dataGroupReady", type="cube.spark.events.OrganizationChartEvent")]
 	
 	[Style(name="dataGroupStyleName", type="String", inherit="no")]
+	[Style(name="autoFocusItems", type="Boolean", inherit="no")]
+	[Style(name="focusItemAlign", type="String", inherit="no", enumeration="topLeft,top,topRight,right,bottomRight,bottom,bottomLeft,left,center")]
 	
 	[ResourceBundle("components")]
 	
@@ -62,7 +64,11 @@ package cube.spark.components {
 			super();
 		}
 		
-		public function focus(id:int):Boolean {
+		public function focussedIndex(id:int):Boolean {
+			return false;
+		}
+		
+		public function focussedItem(item:Object):Boolean {
 			return false;
 		}
 		
@@ -94,12 +100,14 @@ package cube.spark.components {
 				this.backgroundAlpha = 1;
 				this.borderColor = 0x000000;
 				this.borderAlpha = 1;
+				this.autoFocusItems = true;
+				this.focusItemAlign = "center";
 			}
 			return true;
 		}
 		
 		private function scroller_changeHandler(event:Event):void {
-			dataGroup.invalidateLayout(LayoutUpdateType.POSITIONAL);
+			dataGroup.invalidateLayout(LayoutUpdateType.STATUS);
 		}
 
 	}

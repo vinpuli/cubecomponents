@@ -40,6 +40,7 @@ package cube.spark.components.supportClasses {
 	import spark.components.ComboBox;
 	import spark.components.DataGroup;
 	import spark.components.IItemRendererOwner;
+	import spark.components.ResizeMode;
 	import spark.components.supportClasses.Skin;
 	import spark.components.supportClasses.SkinnableComponent;
 	import spark.effects.Resize;
@@ -185,6 +186,10 @@ package cube.spark.components.supportClasses {
 			super.setStyle(styleProp, newValue);
 		}
 		
+		mx_internal override function drawBackground():void {
+			return;
+		}
+		
 		private function injectDefaultProperties(target:IList):void {
 			const len:int = target.length;
 			var item:Object;
@@ -235,6 +240,14 @@ package cube.spark.components.supportClasses {
 		}
 		
 		protected function updateConnectors():void {
+			if (!mouseEnabledWhereTransparent || !hasMouseListeners) {
+				return;
+			}
+			var w:Number = (resizeMode == ResizeMode.SCALE) ? measuredWidth : unscaledWidth;
+			var h:Number = (resizeMode == ResizeMode.SCALE) ? measuredHeight : unscaledHeight;
+			if (isNaN(w) || isNaN(h)) {
+				return;
+			}
 			const offsetH:Number = (getStyle("horizontalPadding") as Number)*.5;
 			const offsetV:Number = (getStyle("verticalPadding") as Number)*.5;
 			const len:int = _visibleItemsData.length;
@@ -346,6 +359,9 @@ package cube.spark.components.supportClasses {
 				}
 			}
 			g.clear();
+			g.beginFill(0xffffff, 0);
+			g.drawRect(horizontalScrollPosition, verticalScrollPosition, w, h);
+			g.endFill();
 			g.lineStyle(2, 0xcccccc, 1, true, LineScaleMode.NONE, CapsStyle.NONE, JointStyle.MITER, 0);
 			g.drawPath(path.commands, path.data);
 		}

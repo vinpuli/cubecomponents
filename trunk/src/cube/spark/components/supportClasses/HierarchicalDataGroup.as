@@ -43,9 +43,13 @@ package cube.spark.components.supportClasses {
 	import spark.components.ResizeMode;
 	import spark.components.supportClasses.Skin;
 	import spark.components.supportClasses.SkinnableComponent;
+	import spark.effects.Animate;
 	import spark.effects.Resize;
+	import spark.effects.animation.MotionPath;
+	import spark.effects.animation.SimpleMotionPath;
 	import spark.effects.easing.Bounce;
 	import spark.effects.easing.Elastic;
+	import spark.effects.easing.Sine;
 	import spark.effects.supportClasses.ResizeInstance;
 	import spark.events.RendererExistenceEvent;
 	import spark.skins.spark.DefaultComplexItemRenderer;
@@ -57,15 +61,17 @@ package cube.spark.components.supportClasses {
 	[Event(name="itemNormalState", type="cube.spark.events.OrganizationChartEvent")]
 	[Event(name="itemMaximizeState", type="cube.spark.events.OrganizationChartEvent")]
 	
-	[Style(name="itemMinimizedWidth", type="Number", format="Length", inherit="yes")]
-	[Style(name="itemMinimizedHeight", type="Number", format="Length", inherit="yes")]
-	[Style(name="itemNormalWidth", type="Number", format="Length", inherit="yes")]
-	[Style(name="itemNormalHeight", type="Number", format="Length", inherit="yes")]
-	[Style(name="itemMaximizedWidth", type="Number", format="Length", inherit="yes")]
-	[Style(name="itemMaximizedHeight", type="Number", format="Length", inherit="yes")]
-	[Style(name="itemRendererSkin", type="Class", inherit="yes")]
-	[Style(name="horizontalPadding", type="Number", format="Length", inherit="yes")]
-	[Style(name="verticalPadding", type="Number", format="Length", inherit="yes")]
+	[Style(name="itemMinimizedWidth", type="Number", format="Length", inherit="no")]
+	[Style(name="itemMinimizedHeight", type="Number", format="Length", inherit="no")]
+	[Style(name="itemNormalWidth", type="Number", format="Length", inherit="no")]
+	[Style(name="itemNormalHeight", type="Number", format="Length", inherit="no")]
+	[Style(name="itemMaximizedWidth", type="Number", format="Length", inherit="no")]
+	[Style(name="itemMaximizedHeight", type="Number", format="Length", inherit="no")]
+	[Style(name="itemRendererSkin", type="Class", inherit="no")]
+	[Style(name="horizontalPadding", type="Number", format="Length", inherit="no")]
+	[Style(name="verticalPadding", type="Number", format="Length", inherit="no")]
+	[Exclude]
+	[Style(name="autoFocusItems", type="Boolean", inherit="no")]
 	
 	[ResourceBundle("components")]
 	
@@ -89,6 +95,7 @@ package cube.spark.components.supportClasses {
 		private var _itemRenderers:Vector.<IOrganizationChartItemRenderer>;
 		private var _animationFlag:Boolean = false;
 		private var _pendingUpdateType:int = 0;
+		private var _autoFocusTarget:int = -1;
 		
 		public function HierarchicalDataGroup():void {
 			addEventListener(FlexEvent.CREATION_COMPLETE, onCreationComplete, false, 0, true);
@@ -232,10 +239,11 @@ package cube.spark.components.supportClasses {
 			if (_hierarchicalLayout) {
 				_visibleItemsData = _hierarchicalLayout.calculateArea(area, horizontalPadding, verticalPadding, _animationFlag, _pendingUpdateType);
 			}
-			trace("Alchemy in "+(getTimer()-timer)+" ms");
+			trace("Alchemy in "+(getTimer()-timer)+" ms (updateType: "+_pendingUpdateType+")");
 			_pendingUpdateType = 0;
 			renderViewableItemsOnly();
 			invalidateConnectors();
+			applyFocus();
 			trace("Rendering in "+(getTimer()-timer)+" ms");
 		}
 		
@@ -359,9 +367,6 @@ package cube.spark.components.supportClasses {
 				}
 			}
 			g.clear();
-			g.beginFill(0xffffff, 0);
-			g.drawRect(horizontalScrollPosition, verticalScrollPosition, w, h);
-			g.endFill();
 			g.lineStyle(2, 0xcccccc, 1, true, LineScaleMode.NONE, CapsStyle.NONE, JointStyle.MITER, 0);
 			g.drawPath(path.commands, path.data);
 		}
@@ -413,7 +418,7 @@ package cube.spark.components.supportClasses {
 						_itemRenderers.push(item);
 					}
 				}
-				trace("***DEBUG*** Created "+numChildren+" and "+numElements+" items");
+				//trace("***DEBUG*** Created "+numChildren+" and "+numElements+" items");
 			}
 		}
 		
@@ -463,6 +468,25 @@ package cube.spark.components.supportClasses {
 			dispatchEvent(new PropertyChangeEvent(PropertyChangeEvent.PROPERTY_CHANGE, false, false, PropertyChangeEventKind.UPDATE, "contentHeight", contentHeight, _hierarchicalLayout.measuredHeight, this));
 			// re-initiate binds
 			_dataProvider.addEventListener(CollectionEvent.COLLECTION_CHANGE, dataProvider_collectionChangeHandler, false, 0, true);
+		}
+		
+		private function applyFocus():void {
+			if ((_autoFocusTarget >= 0) && (getStyle("autoFocusItems") == true)) {
+				const centerPos:Point = _hierarchicalLayout.getAbsoluteCenter(_autoFocusTarget);
+				const animation:Animate = new Animate(this);
+				const xPath:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition", horizontalScrollPosition, (centerPos.x-width/2), 1);
+				const yPath:SimpleMotionPath = new SimpleMotionPath("verticalScrollPosition", verticalScrollPosition, (centerPos.y-height/2), 1);
+				const motionPaths:Vector.<MotionPath> = new Vector.<MotionPath>(2, true);
+				motionPaths[0] = xPath;
+				motionPaths[1] = yPath;
+				animation.motionPaths = motionPaths;
+				animation.duration = 300;
+				animation.easer = new Sine();
+				animation.triggerEvent = null;
+				animation.startDelay = 50;
+				animation.play();
+			}
+			_autoFocusTarget = -1;
 		}
 		
 		private function setupDefaultInheritingStyles():Boolean {
@@ -545,6 +569,7 @@ package cube.spark.components.supportClasses {
 					dispatchEvent(new OrganizationChartEvent(OrganizationChartEvent.ITEM_MAXIMIZE_STATE, layoutData.listIndex, item));
 					break;
 			}
+			_autoFocusTarget = item.data.id;
 		}
 		
 		private function itemRenderer_disconnectedChangeHandler(event:Event):void {
@@ -554,6 +579,7 @@ package cube.spark.components.supportClasses {
 		private function itemRenderer_collapsedChangeHandler(event:Event):void {
 			const item:IOrganizationChartItemRenderer = event.currentTarget as IOrganizationChartItemRenderer;
 			_hierarchicalLayout.writeBytes(item.data, (item.data as LayoutData).listIndex);
+			_autoFocusTarget = (item.data as LayoutData).id;
 			triggerAnimationFlag();
 			invalidateLayout(LayoutUpdateType.STATUS);
 		}

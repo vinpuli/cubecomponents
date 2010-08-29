@@ -55,16 +55,18 @@ static inline int findOriginator() {
 	return -1;
 }
 
-static inline void reset() {
+static inline void reset(int type) {
 	int i, maxId;
-	_hasProcessedNodes = FALSE;
+	if (type == 2) { _hasProcessedNodes = FALSE; }
 	maxId = 0;
 	if (_initialized) {
-		for (i=0; i<_data_len; i++) {
-			maxId = (_data_id[i] > maxId) ? _data_id[i] : maxId;
+		if (type == 2) {
+			for (i=0; i<_data_len; i++) {
+				maxId = (_data_id[i] > maxId) ? _data_id[i] : maxId;
+			}
+			free(_data_memPos_id);
+			_data_memPos_id = calloc(maxId, _INTSIZE);
 		}
-		free(_data_memPos_id);
-		_data_memPos_id = calloc(maxId, _INTSIZE);
 		for (i=0; i<_data_len; i++) {
 			if (!_hasProcessedNodes) {
 				free(_processedNodes[i]);
@@ -130,7 +132,7 @@ AS3_Val initializeBuffers(void* self, AS3_Val args) {
 		_data_visible = calloc(_data_len, _INTSIZE);
 		_processedNodes = (processedNode **)realloc(_processedNodes, _data_len * sizeof(processedNode *));
 		retVal = AS3_Int(_data_len*7*_INTSIZE+_data_len*10*_FLOATSIZE);
-		reset();
+		reset(2);
 		_initialized = TRUE;
 	} else {
 		retVal = AS3_Int(0);
@@ -208,8 +210,8 @@ static inline int getMemPos(int id) {
 
 static inline float getItemSize(int memPos, boolean widthOrHeight) {
 	if (_data_state[memPos] == 0) { return widthOrHeight ? _data_minimizedWidth[memPos] : _data_minimizedHeight[memPos]; }
-	if (_data_state[memPos] == 1) { return widthOrHeight ? _data_normalWidth[memPos] : _data_normalHeight[memPos]; }
-	if (_data_state[memPos] == 2) { return widthOrHeight ? _data_maximizedWidth[memPos] : _data_maximizedHeight[memPos]; }
+	else if (_data_state[memPos] == 1) { return widthOrHeight ? _data_normalWidth[memPos] : _data_normalHeight[memPos]; }
+	else if (_data_state[memPos] == 2) { return widthOrHeight ? _data_maximizedWidth[memPos] : _data_maximizedHeight[memPos]; }
 	return 0;
 }
 
@@ -326,6 +328,21 @@ static inline boolean isWithinVisibleArea(int memPos, double entryPointX, double
 	return FALSE;
 }
 
+AS3_Val getAbsoluteCenter(void* self, AS3_Val args) {
+	int i, id;
+	float px, py;
+	AS3_ArrayValue(args, "IntType", &id);
+	px = py = 0;
+	for (i=0; i<_data_len; i++) {
+		if (_data_id[i] == id) {
+			px = _data_xPos[i]+getItemSize(i, TRUE)*.5;
+			py = _data_yPos[i]+getItemSize(i, FALSE)*.5;
+			break;
+		}
+	}
+	return AS3_Array("DoubleType, DoubleType", px, py);
+}
+
 AS3_Val calculate(void* self, AS3_Val args) {
 	float totalHeight;
 	int i, j, k, updateType, ownerMemPos;
@@ -339,7 +356,7 @@ AS3_Val calculate(void* self, AS3_Val args) {
 		_hasOriginator = TRUE;
 	}
 	if (updateType > 0) {
-		reset();
+		reset(2);
 		totalSize = map(&_originator);
 		totalHeight = normalize(totalSize.xVal*.5-getItemSize(_originator, TRUE)*.5);
 		//totalHeight += getItemSize(_originator, FALSE);
@@ -392,10 +409,11 @@ int main() {
 	AS3_Val getDataPointerForCollapsedVal = AS3_Function(NULL, getDataPointerForCollapsed);
 	AS3_Val getDataPointerForXPosVal = AS3_Function(NULL, getDataPointerForXPos);
 	AS3_Val getDataPointerForYPosVal = AS3_Function(NULL, getDataPointerForYPos);
+	AS3_Val getAbsoluteCenterVal = AS3_Function(NULL, getAbsoluteCenter);
 	AS3_Val calculateVal = AS3_Function(NULL, calculate);
     AS3_Val result = AS3_Object(
-    	"flushBuffers:AS3ValType, initializeBuffers: AS3ValType, getDataPointerForHasChildren:AS3ValType, getDataPointerForVisibleItems:AS3ValType, getDataPointerForOwnerVisibleItems:AS3ValType, getDataPointerForId: AS3ValType, getDataPointerForOwnerId: AS3ValType, getDataPointerForMinimizedWidth: AS3ValType, getDataPointerForMinimizedHeight: AS3ValType, getDataPointerForNormalWidth: AS3ValType, getDataPointerForNormalHeight: AS3ValType, getDataPointerForMaximizedWidth: AS3ValType, getDataPointerForMaximizedHeight: AS3ValType, getDataPointerForState: AS3ValType, getDataPointerForCollapsed: AS3ValType, getDataPointerForXPos: AS3ValType, getDataPointerForYPos: AS3ValType, calculate: AS3ValType",
-    	flushBuffersVal, initializeBuffersVal, getDataPointerForHasChildrenVal, getDataPointerForVisibleItemsVal, getDataPointerForOwnerVisibleItemsVal, getDataPointerForIdVal, getDataPointerForOwnerIdVal, getDataPointerForMinimizedWidthVal, getDataPointerForMinimizedHeightVal, getDataPointerForNormalWidthVal, getDataPointerForNormalHeightVal, getDataPointerForMaximizedWidthVal, getDataPointerForMaximizedHeightVal, getDataPointerForStateVal, getDataPointerForCollapsedVal, getDataPointerForXPosVal, getDataPointerForYPosVal, calculateVal);
+    	"flushBuffers:AS3ValType, initializeBuffers: AS3ValType, getDataPointerForHasChildren:AS3ValType, getDataPointerForVisibleItems:AS3ValType, getDataPointerForOwnerVisibleItems:AS3ValType, getDataPointerForId: AS3ValType, getDataPointerForOwnerId: AS3ValType, getDataPointerForMinimizedWidth: AS3ValType, getDataPointerForMinimizedHeight: AS3ValType, getDataPointerForNormalWidth: AS3ValType, getDataPointerForNormalHeight: AS3ValType, getDataPointerForMaximizedWidth: AS3ValType, getDataPointerForMaximizedHeight: AS3ValType, getDataPointerForState: AS3ValType, getDataPointerForCollapsed: AS3ValType, getDataPointerForXPos: AS3ValType, getDataPointerForYPos: AS3ValType, getAbsoluteCenter:AS3ValType, calculate: AS3ValType",
+    	flushBuffersVal, initializeBuffersVal, getDataPointerForHasChildrenVal, getDataPointerForVisibleItemsVal, getDataPointerForOwnerVisibleItemsVal, getDataPointerForIdVal, getDataPointerForOwnerIdVal, getDataPointerForMinimizedWidthVal, getDataPointerForMinimizedHeightVal, getDataPointerForNormalWidthVal, getDataPointerForNormalHeightVal, getDataPointerForMaximizedWidthVal, getDataPointerForMaximizedHeightVal, getDataPointerForStateVal, getDataPointerForCollapsedVal, getDataPointerForXPosVal, getDataPointerForYPosVal, getAbsoluteCenterVal, calculateVal);
     AS3_Release(flushBuffersVal);
     AS3_Release(initializeBuffersVal);
     AS3_Release(getDataPointerForHasChildrenVal);
@@ -413,6 +431,7 @@ int main() {
     AS3_Release(getDataPointerForCollapsedVal);
     AS3_Release(getDataPointerForXPosVal);
     AS3_Release(getDataPointerForYPosVal);
+    AS3_Release(getAbsoluteCenterVal);
     AS3_Release(calculateVal);
     AS3_LibInit(result);
     return 0;

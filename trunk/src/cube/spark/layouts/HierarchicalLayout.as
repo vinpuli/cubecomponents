@@ -7,6 +7,7 @@ package cube.spark.layouts {
 	import cube.spark.layouts.supportClasses.LayoutUpdateType;
 	import cube.spark.layouts.supportClasses.MemoryPointerCollection;
 	
+	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.utils.ByteArray;
 	import flash.utils.Endian;
@@ -67,7 +68,13 @@ package cube.spark.layouts {
 			_memory.position =  _memoryPointerCollection.xPosPointer;
 		}
 		
+		public function getAbsoluteCenter(id:int):Point {
+			const result:Array = _clib.getAbsoluteCenter(id);
+			return new Point(result[0], result[1]);
+		}
+		
 		public function calculateArea(area:Rectangle, horizontalPadding:Number, verticalPadding:Number, includeOldLayout:Boolean, updateType:int):Vector.<LayoutData> {
+			const timer:int = getTimer();
 			const measuredSize:Array = _clib.calculate(horizontalPadding, verticalPadding, area.x, area.y, area.width, area.height, updateType);
 			const numVisibleItems:int = measuredSize.pop() as int;
 			const layoutDataCollection:Vector.<LayoutData> = new Vector.<LayoutData>(numVisibleItems, true);
@@ -79,7 +86,7 @@ package cube.spark.layouts {
 			var state:int;
 			var collapsed:int;
 			var hasChildren:int;
-			var i:int;trace(numVisibleItems);
+			var i:int;
 			for (i=0; i<numVisibleItems; i++) {
 				_memory.position = _memoryPointerCollection.visibleItemsPointer+4*i;
 				memoryIndex = _memory.readInt();

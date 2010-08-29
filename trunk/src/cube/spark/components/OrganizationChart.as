@@ -22,7 +22,6 @@ package cube.spark.components {
 	
 	[Style(name="dataGroupStyleName", type="String", inherit="no")]
 	[Style(name="autoFocusItems", type="Boolean", inherit="no")]
-	[Style(name="focusItemAlign", type="String", inherit="no", enumeration="topLeft,top,topRight,right,bottomRight,bottom,bottomLeft,left,center")]
 	
 	[ResourceBundle("components")]
 	
@@ -36,6 +35,7 @@ package cube.spark.components {
 		
 		private var _dataProvider:IList;
 		private var _doLaterSetDataProvider:Boolean = false;
+		private var _invalidationTimeout:Boolean = false;
 		
 		[SkinPart(required="true")]
 		public var dataGroup:HierarchicalDataGroup;
@@ -85,6 +85,7 @@ package cube.spark.components {
 						dataGroup.styleManager.setStyleDeclaration("cube.spark.components.supportClasses.HierarchicalDataGroup", dataGroupStyleDeclaration, true);
 					}
 				}
+				dataGroup.setStyle("autoFocusItems", getStyle("autoFocusItems"));
 				dispatchEvent(new OrganizationChartEvent(OrganizationChartEvent.DATA_GROUP_READY, 0, null));
 			} else if (instance == scroller) {
 				scroller.horizontalScrollBar.addEventListener(Event.CHANGE, scroller_changeHandler, false, 0, true);
@@ -101,14 +102,21 @@ package cube.spark.components {
 				this.borderColor = 0x000000;
 				this.borderAlpha = 1;
 				this.autoFocusItems = true;
-				this.focusItemAlign = "center";
 			}
 			return true;
 		}
 		
 		private function scroller_changeHandler(event:Event):void {
-			dataGroup.invalidateLayout(LayoutUpdateType.STATUS);
+			if (!_invalidationTimeout) {
+				addEventListener(Event.ENTER_FRAME, self_enterFrameHandler, false, 0, true);
+				_invalidationTimeout = true;
+			}
 		}
 
+		private function self_enterFrameHandler(event:Event):void {
+			removeEventListener(Event.ENTER_FRAME, self_enterFrameHandler);
+			_invalidationTimeout = false;
+			dataGroup.invalidateLayout(LayoutUpdateType.POSITIONAL);
+		}
 	}
 }

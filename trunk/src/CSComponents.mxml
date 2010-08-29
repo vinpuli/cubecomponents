@@ -274,7 +274,7 @@
 	<mx:DividedBox direction="horizontal" paddingLeft="6" paddingBottom="6" paddingRight="6" paddingTop="6" backgroundColor="0x888888" width="100%" height="100%">
 		<s:Panel title="Organization Chart Styles" backgroundColor="#cccccc" dropShadowVisible="false" width="100%" height="100%">
 			<components:OrganizationChart id="organizationChart" backgroundColor="#333333"
-										  top="4" right="4" bottom="4" left="4" focusItemAlign="center"
+										  top="4" right="4" bottom="4" left="4"
 										  dataProvider="{_dataProvider}" autoFocusItems="true"
 										  creationComplete="organizationChart_creationCompleteHandler(event)"
 										  dataGroupReady="organizationChart_dataGroupReadyHandler(event)"/>

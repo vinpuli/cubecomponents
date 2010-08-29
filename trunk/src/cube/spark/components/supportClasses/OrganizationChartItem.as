@@ -7,6 +7,7 @@ package cube.spark.components.supportClasses {
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	
+	import mx.core.UIComponentCachePolicy;
 	import mx.effects.IEffectInstance;
 	import mx.events.EffectEvent;
 	import mx.events.StateChangeEvent;
@@ -63,6 +64,7 @@ package cube.spark.components.supportClasses {
 			return _data;
 		}
 		public function set data(value:Object):void {
+			if (_data == value) { return; }
 			var oldState:int = -1;
 			if (_data) {
 				oldState = _data.state;
@@ -229,8 +231,8 @@ package cube.spark.components.supportClasses {
 		}
 		
 		protected function openButton_clickHandler(event:MouseEvent):void {
-			event.stopPropagation();
-			event.stopImmediatePropagation();
+			//event.stopPropagation();
+			//event.stopImmediatePropagation();
 			collapsed = !collapsed;
 		}
 		

@@ -64,12 +64,10 @@ package cube.spark.components {
 			super();
 		}
 		
-		public function focussedIndex(id:int):Boolean {
-			return false;
-		}
-		
-		public function focussedItem(item:Object):Boolean {
-			return false;
+		public function focus(target:*):void {
+			if (dataGroup) {
+				dataGroup.focus(target);
+			}
 		}
 		
 		override protected function partAdded(partName:String, instance:Object):void {

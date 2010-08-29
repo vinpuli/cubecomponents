@@ -227,6 +227,19 @@ package cube.spark.components.supportClasses {
 			}
 		}
 		
+		mx_internal function focus(target:*):void {
+			if (target is int) {
+				_autoFocusTarget = target as int;
+			} else {
+				if (target.data) {
+					if (target.data.id >= 0) {
+						_autoFocusTarget = target.data.id;
+					}
+				}
+			}
+			applyFocus();
+		}
+		
 		protected function delayedInvalidateLayout():void {
 			const horizontalPadding:Number = getStyle("horizontalPadding") as Number;
 			const verticalPadding:Number = getStyle("verticalPadding") as Number;
@@ -275,6 +288,7 @@ package cube.spark.components.supportClasses {
 			var ownerIsVisible:Boolean;
 			var i:int;
 			var j:int;
+			var pathLen:int;
 			for (i=0; i<len; i++) {
 				item = _itemRenderers[i];
 				if (!item.disconnected) {
@@ -322,13 +336,14 @@ package cube.spark.components.supportClasses {
 									}
 									break;
 							}
+							pathLen = path.data.length;
 							switch (connectorEntry.orientation) {
 								case ConnectorOrientation.LEFT :
 									if (directionFlag == 0) {
-										path.lineTo((item.x+connectorEntry.x-offsetH+curve), (ownerItem.y+ownerItem.height+offsetV));
+										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x-offsetH+curve), (ownerItem.y+ownerItem.height+offsetV));
 										path.curveTo((item.x+connectorEntry.x-offsetH), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x-offsetH), (ownerItem.y+ownerItem.height+offsetV+curve));
 									} else if (directionFlag == 1) {
-										path.lineTo((item.x+connectorEntry.x-offsetH-curve), (ownerItem.y+ownerItem.height+offsetV));
+										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x-offsetH-curve), (ownerItem.y+ownerItem.height+offsetV));
 										path.curveTo((item.x+connectorEntry.x-offsetH), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x-offsetH), (ownerItem.y+ownerItem.height+offsetV+curve));
 									}
 									path.lineTo((item.x+connectorEntry.x-offsetH), (item.y+connectorEntry.y-curve));
@@ -338,10 +353,10 @@ package cube.spark.components.supportClasses {
 									break;
 								case ConnectorOrientation.RIGHT :
 									if (directionFlag == 0) {
-										path.lineTo((item.x+connectorEntry.x+offsetH+curve), (ownerItem.y+ownerItem.height+offsetV));
+										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x+offsetH+curve), (ownerItem.y+ownerItem.height+offsetV));
 										path.curveTo((item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV+curve));
 									} else if (directionFlag == 1) {
-										path.lineTo((item.x+connectorEntry.x+offsetH-curve), (ownerItem.y+ownerItem.height+offsetV));
+										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x+offsetH-curve), (ownerItem.y+ownerItem.height+offsetV));
 										path.curveTo((item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV+curve));
 									}
 									path.lineTo((item.x+connectorEntry.x+offsetH), (item.y+connectorEntry.y-curve));
@@ -351,11 +366,11 @@ package cube.spark.components.supportClasses {
 									break;
 								case ConnectorOrientation.TOP :
 									if (directionFlag == 0) {
-										path.lineTo((item.x+connectorEntry.x+curve), (ownerItem.y+ownerItem.height+offsetV));
+										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x+curve), (ownerItem.y+ownerItem.height+offsetV));
 										path.curveTo((item.x+connectorEntry.x), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x), (ownerItem.y+ownerItem.height+offsetV+curve));
 										path.lineTo((item.x+connectorEntry.x), (item.y+connectorEntry.y));
 									} else if (directionFlag == 1) {
-										path.lineTo((item.x+connectorEntry.x-curve), (ownerItem.y+ownerItem.height+offsetV));
+										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x-curve), (ownerItem.y+ownerItem.height+offsetV));
 										path.curveTo((item.x+connectorEntry.x), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x), (ownerItem.y+ownerItem.height+offsetV+curve));
 										path.lineTo((item.x+connectorEntry.x), (item.y+connectorEntry.y));
 									} else {
@@ -363,13 +378,28 @@ package cube.spark.components.supportClasses {
 									}
 									break;
 							}
+
 						}
 					}
 				}
 			}
 			g.clear();
-			g.lineStyle(2, 0xcccccc, 1, true, LineScaleMode.NONE, CapsStyle.NONE, JointStyle.MITER, 0);
+			g.lineStyle(2, 0xcccccc, 1, true, LineScaleMode.NONE, CapsStyle.NONE, JointStyle.MITER, 1.414);
 			g.drawPath(path.commands, path.data);
+		}
+		
+		private function optimizeNextLineTo(path:GraphicsPath, dx:Number, dy:Number, tx:Number, ty:Number):void {
+			const dist:Number = Math.abs(tx-dx);
+			const maxVal:int = 10000;
+			if (dist > maxVal) {
+				const cnt:int = int(dist/maxVal);
+				const val:int = (tx > dx) ? maxVal : -maxVal;
+				var i:int;
+				for (i=1; i<cnt; i++) {
+					path.lineTo(dx+val*i, ty);
+				}
+			}
+			path.lineTo(tx, ty);
 		}
 		
 		private function buildItemRenderers():void {

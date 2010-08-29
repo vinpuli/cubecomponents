@@ -201,7 +201,7 @@
 					firstName: _FIRST_NAMES[int(Math.random()*_FIRST_NAMES.length)],
 					lastName: _LAST_NAMES[int(Math.random()*_LAST_NAMES.length)],
 					disconnected:false, itemRendererSkin: BusinessOrganizationChartItemSkin, image:_IMAGES[int(Math.random()*_IMAGES.length)]});
-				while (source.length < 5000) {
+				while (source.length < 10000) {
 					possibleOwners = new Array();
 					rnd = int(Math.random()*source.length);
 					possibleOwners.push({id:source[rnd].id, index:rnd});
@@ -267,6 +267,11 @@
 			protected function organizationChart_dataGroupReadyHandler(event:OrganizationChartEvent):void {
 				_hierarchicalDataGroupStyles = new HierarchicalDataGroupStyles(organizationChart.dataGroup);
 				_hierarchicalDataGroupStyles.addEventListener(StyleExplorerEvent.STYLE_CHANGED, styleObject_styleChangedHandler, false, 0, true);
+			}
+
+
+			protected function dataGrid_changeHandler(event:ListEvent):void {
+				organizationChart.focus(event.itemRenderer.data.id);
 			}
 
 		]]>
@@ -380,7 +385,9 @@
 				</s:Scroller>
 			</s:Panel>
 			<s:Panel title="{'DataProvider (editable grid: '+_dataProvider.length+' items)'}" backgroundColor="#cccccc" dropShadowVisible="false" width="100%" height="100%">
-				<mx:DataGrid id="dataGrid" top="4" right="4" bottom="4" left="4" dataProvider="{_dataProvider}" editable="true" sortableColumns="false">
+				<mx:DataGrid id="dataGrid" top="4" right="4" bottom="4" left="4"
+							 dataProvider="{_dataProvider}" editable="true" 
+							 sortableColumns="false" change="dataGrid_changeHandler(event)">
 					<mx:columns>
 						<mx:DataGridColumn dataField="id" editable="false" />
 						<mx:DataGridColumn dataField="ownerId" editable="true" />

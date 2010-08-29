@@ -27,6 +27,7 @@ package cube.spark.components.supportClasses {
 	import mx.effects.IEffectInstance;
 	import mx.events.CollectionEvent;
 	import mx.events.CollectionEventKind;
+	import mx.events.EffectEvent;
 	import mx.events.FlexEvent;
 	import mx.events.ListEvent;
 	import mx.events.ListEventReason;
@@ -479,6 +480,7 @@ package cube.spark.components.supportClasses {
 				const motionPaths:Vector.<MotionPath> = new Vector.<MotionPath>(2, true);
 				motionPaths[0] = xPath;
 				motionPaths[1] = yPath;
+				animation.addEventListener(EffectEvent.EFFECT_END, animation_effectEndHandler, false, 0, true);
 				animation.motionPaths = motionPaths;
 				animation.duration = 300;
 				animation.easer = new Sine();
@@ -539,6 +541,12 @@ package cube.spark.components.supportClasses {
 			$removeChild(child);
 			childRemoved(child);
 			return child;
+		}
+		
+		private function animation_effectEndHandler(event:EffectEvent):void {
+			const animation:Animate = event.currentTarget as Animate;
+			animation.removeEventListener(EffectEvent.EFFECT_END, animation_effectEndHandler);
+			invalidateLayout(LayoutUpdateType.POSITIONAL);
 		}
 		
 		private function hierarchicalDataGroup_resizeHandler(event:ResizeEvent):void {

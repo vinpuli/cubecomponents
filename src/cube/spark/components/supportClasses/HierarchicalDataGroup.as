@@ -71,10 +71,6 @@ package cube.spark.components.supportClasses {
 	[Style(name="itemRendererSkin", type="Class", inherit="no")]
 	[Style(name="horizontalPadding", type="Number", format="Length", inherit="no")]
 	[Style(name="verticalPadding", type="Number", format="Length", inherit="no")]
-	[Exclude]
-	[Style(name="autoFocusItems", type="Boolean", inherit="no")]
-	[Exclude]
-	[Style(name="cornerRadius", type="Number", inherit="no")]
 	
 	[ResourceBundle("components")]
 	
@@ -190,6 +186,11 @@ package cube.spark.components.supportClasses {
 						}
 						_hierarchicalLayout.flushAndFillMemory();
 						invalidateLayout(LayoutUpdateType.STATUS);
+						break;
+					case "connectorLineColor" :
+					case "connectorLineAlpha" :
+					case "connectorLineThickness" :
+						invalidateConnectors();
 						break;
 				}
 			}
@@ -398,7 +399,7 @@ package cube.spark.components.supportClasses {
 				}
 			}
 			g.clear();
-			g.lineStyle(2, 0xcccccc, 1, true, LineScaleMode.NONE, CapsStyle.NONE, JointStyle.MITER, 1.414);
+			g.lineStyle(getStyle("connectorLineThickness"), getStyle("connectorLineColor"), getStyle("connectorLineAlpha"), true, LineScaleMode.NONE, CapsStyle.NONE, JointStyle.MITER, 1.414);
 			g.drawPath(path.commands, path.data);
 		}
 		
@@ -551,6 +552,9 @@ package cube.spark.components.supportClasses {
 					this.horizontalPadding = 60;
 					this.verticalPadding = 60;
 					this.cornerRadius = 12;
+					this.connectorLineColor = 0xcccccc;
+					this.connectorLineAlpha = 1;
+					this.connectorLineThickness = 2;
 				}
 				styleManager.setStyleDeclaration("cube.spark.components.supportClasses.HierarchicalDataGroup", styleDeclaration, true);
 			}

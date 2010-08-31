@@ -20,8 +20,11 @@ package cube.spark.components {
 	
 	[Event(name="dataGroupReady", type="cube.spark.events.OrganizationChartEvent")]
 	
-	[Style(name="dataGroupStyleName", type="String", inherit="no")]
-	[Style(name="autoFocusItems", type="Boolean", inherit="no")]
+	[Style(name="dataGroupStyleName", type="String", inherit="no", theme="spark")]
+	[Style(name="autoFocusItems", type="Boolean", inherit="no", theme="spark")]
+	[Style(name="connectorLineColor", type="uint", format="Color", inherit="no", theme="spark")]
+	[Style(name="connectorLineAlpha", type="Number", inherit="no", theme="spark")]
+	[Style(name="connectorLineThickness", type="Number", inherit="no", theme="spark")]
 	
 	[ResourceBundle("components")]
 	
@@ -72,12 +75,11 @@ package cube.spark.components {
 		
 		override public function setStyle(styleProp:String, newValue:*):void {
 			switch (styleProp) {
-				case "autoFocusItems" :
+				case "autoFocusItems" : case "connectorLineColor" : case "connectorLineAlpha" : case "connectorLineThickness" :
 					if (dataGroup) {
 						dataGroup.setStyle(styleProp, newValue);
 					}
 					break;
-					
 			}
 			super.setStyle(styleProp, newValue);
 		}
@@ -96,6 +98,7 @@ package cube.spark.components {
 					}
 				}
 				dataGroup.setStyle("autoFocusItems", getStyle("autoFocusItems"));
+				dataGroup.setStyle("connectorLineColor", getStyle("connectorLineColor"));
 				dispatchEvent(new OrganizationChartEvent(OrganizationChartEvent.DATA_GROUP_READY, 0, null));
 			} else if (instance == scroller) {
 				scroller.horizontalScrollBar.addEventListener(Event.CHANGE, scroller_changeHandler, false, 0, true);
@@ -112,6 +115,9 @@ package cube.spark.components {
 				this.borderColor = 0x000000;
 				this.borderAlpha = 1;
 				this.autoFocusItems = true;
+				this.connectorLineColor = 0xcccccc;
+				this.connectorLineAlpha = 1;
+				this.connectorLineThickness = 2;
 			}
 			return true;
 		}

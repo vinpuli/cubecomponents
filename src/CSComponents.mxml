@@ -329,6 +329,21 @@
 							<mx:CheckBox id="autoFocusItemsInput" name="autoFocusItems" selected="{_organizationChartStyles.autoFocusItems}" change="styleInput_changeHandler(event)" right="0" />
 							<mx:Spacer width="216" />
 						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Connector line alpha:" width="100%" />
+							<s:HSlider id="connectorLineAlphaSlider" name="connectorLineAlpha" stepSize=".01" value="{_organizationChartStyles.connectorLineAlpha}" change="styleInput_changeHandler(event)" minimum="0" maximum="1" width="200" />
+							<s:TextInput id="connectorLineAlphaInput" name="connectorLineAlpha" text="{_organizationChartStyles.connectorLineAlpha}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Connector line color:" width="100%" />
+							<mx:ColorPicker id="connectorLineColorInput" name="connectorLineColor" selectedColor="{_organizationChartStyles.connectorLineColor}" change="styleInput_changeHandler(event)" right="0" />
+							<mx:Spacer width="207" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Connector line thickness:" width="100%" />
+							<s:HSlider id="connectorLineThicknessSlider" name="connectorLineThickness" stepSize=".01" value="{_organizationChartStyles.connectorLineThickness}" change="styleInput_changeHandler(event)" minimum="0" maximum="20" width="200" />
+							<s:TextInput id="connectorLineThicknessInput" name="connectorLineThickness" text="{_organizationChartStyles.connectorLineThickness}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
 						
 						<mx:Spacer width="100%" height="4" />
 						<s:Label text="Data Group Styles" styleName="styleHeader" width="100%" />
@@ -357,32 +372,32 @@
 						</s:HGroup>
 						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
 							<s:Label text="Item renderer minimized width:" width="100%" />
-							<s:HSlider id="irmwSlider" name="itemMinimizedWidth" value="{_hierarchicalDataGroupStyles.itemMinimizedWidth}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:HSlider id="irmwSlider" name="itemMinimizedWidth" value="{_hierarchicalDataGroupStyles.itemMinimizedWidth}" change="styleInput_changeHandler(event)" minimum="10" maximum="200" width="200" />
 							<s:TextInput id="irmwInput" name="itemMinimizedWidth" text="{_hierarchicalDataGroupStyles.itemMinimizedWidth}" change="styleInput_changeHandler(event)" width="30" />
 						</s:HGroup>
 						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
 							<s:Label text="Item renderer minimized height:" width="100%" />
-							<s:HSlider id="irmhSlider" name="itemMinimizedHeight" value="{_hierarchicalDataGroupStyles.itemMinimizedHeight}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:HSlider id="irmhSlider" name="itemMinimizedHeight" value="{_hierarchicalDataGroupStyles.itemMinimizedHeight}" change="styleInput_changeHandler(event)" minimum="10" maximum="200" width="200" />
 							<s:TextInput id="irmhInput" name="itemMinimizedHeight" text="{_hierarchicalDataGroupStyles.itemMinimizedHeight}" change="styleInput_changeHandler(event)" width="30" />
 						</s:HGroup>
 						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
 							<s:Label text="Item renderer normal width:" width="100%" />
-							<s:HSlider id="irnwSlider" name="itemNormalWidth" value="{_hierarchicalDataGroupStyles.itemNormalWidth}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:HSlider id="irnwSlider" name="itemNormalWidth" value="{_hierarchicalDataGroupStyles.itemNormalWidth}" change="styleInput_changeHandler(event)" minimum="10" maximum="200" width="200" />
 							<s:TextInput id="irnwInput" name="itemNormalWidth" text="{_hierarchicalDataGroupStyles.itemNormalWidth}" change="styleInput_changeHandler(event)" width="30" />
 						</s:HGroup>
 						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
 							<s:Label text="Item renderer normal height:" width="100%" />
-							<s:HSlider id="irnhSlider" name="itemNormalHeight" value="{_hierarchicalDataGroupStyles.itemNormalHeight}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:HSlider id="irnhSlider" name="itemNormalHeight" value="{_hierarchicalDataGroupStyles.itemNormalHeight}" change="styleInput_changeHandler(event)" minimum="10" maximum="200" width="200" />
 							<s:TextInput id="irnhInput" name="itemNormalHeight" text="{_hierarchicalDataGroupStyles.itemNormalHeight}" change="styleInput_changeHandler(event)" width="30" />
 						</s:HGroup>
 						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
 							<s:Label text="Item renderer maximized width:" width="100%" />
-							<s:HSlider id="irmxwSlider" name="itemMaximizedWidth" value="{_hierarchicalDataGroupStyles.itemMaximizedWidth}" change="styleInput_changeHandler(event)" minimum="0" maximum="400" width="200" />
+							<s:HSlider id="irmxwSlider" name="itemMaximizedWidth" value="{_hierarchicalDataGroupStyles.itemMaximizedWidth}" change="styleInput_changeHandler(event)" minimum="10" maximum="600" width="200" />
 							<s:TextInput id="irmxwInput" name="itemMaximizedWidth" text="{_hierarchicalDataGroupStyles.itemMaximizedWidth}" change="styleInput_changeHandler(event)" width="30" />
 						</s:HGroup>
 						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
 							<s:Label text="Item renderer maximized height:" width="100%" />
-							<s:HSlider id="irmxhSlider" name="itemMaximizedHeight" value="{_hierarchicalDataGroupStyles.itemMaximizedHeight}" change="styleInput_changeHandler(event)" minimum="0" maximum="400" width="200" />
+							<s:HSlider id="irmxhSlider" name="itemMaximizedHeight" value="{_hierarchicalDataGroupStyles.itemMaximizedHeight}" change="styleInput_changeHandler(event)" minimum="10" maximum="600" width="200" />
 							<s:TextInput id="irmxhInput" name="itemMaximizedHeight" text="{_hierarchicalDataGroupStyles.itemMaximizedHeight}" change="styleInput_changeHandler(event)" width="30" />
 						</s:HGroup>
 						

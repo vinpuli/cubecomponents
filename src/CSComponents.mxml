@@ -13,6 +13,7 @@
 		@namespace components "cube.spark.components.*";
 		@namespace spark "cube.skins.spark.*";
 		@namespace business "cube.skins.spark.business.*";
+		@namespace supportClasses "cube.spark.components.supportClasses.*";
 		
 		mx|DataGrid {
 			alternatingItemColors: #000000, #333333;
@@ -61,16 +62,6 @@
 			background-color: #000000;
 		}
 		
-		spark|OrganizationChartItemSkin
-		{
-			corner-radius: 12;
-		}
-		
-		business|BusinessOrganizationChartItemSkin
-		{
-			corner-radius: 12;
-		}
-		
 		.dataGroup
 		{
 			horizontal-padding: 20;
@@ -89,9 +80,11 @@
 			import cube.skins.spark.OrganizationChartItemSkin;
 			import cube.skins.spark.OrganizationChartSkin;
 			import cube.skins.spark.business.BusinessOrganizationChartItemSkin;
+			import cube.spark.components.supportClasses.OrganizationChartItem;
 			import cube.spark.components.supportClasses.OrganizationChartItemState;
 			import cube.spark.events.OrganizationChartEvent;
 			import cube.spark.utils.HierarchicalDataGroupStyles;
+			import cube.spark.utils.OrganizationChartItemStyles;
 			import cube.spark.utils.OrganizationChartStyles;
 			
 			import mx.collections.ArrayCollection;
@@ -111,6 +104,8 @@
 			private var _organizationChartStyles:OrganizationChartStyles;
 			[Bindable]
 			private var _hierarchicalDataGroupStyles:HierarchicalDataGroupStyles;
+			[Bindable]
+			private var _organizationChartItemStyles:OrganizationChartItemStyles;
 			
 			private var _FIRST_NAMES:Array = [
 				"Albert", "Alan", "Amy", "Anna", "Anthony", "Alvin", "Anouchka", "Anita",
@@ -231,11 +226,22 @@
 						parseInt((inputComponent as TextInput).text) :
 						(inputComponent is HSlider) ? 
 						(inputComponent as HSlider).value :
+						(inputComponent is CheckBox) ? 
+						(inputComponent as CheckBox).selected :
 						(inputComponent is ColorPicker) ? 
 						(inputComponent as ColorPicker).selectedColor
 						: 0);
-				} else {
+				} else if (_hierarchicalDataGroupStyles.hasOwnProperty(inputComponent.name)) {
 					_hierarchicalDataGroupStyles.setStyle(inputComponent.name,
+						(inputComponent is TextInput) ? 
+						parseInt((inputComponent as TextInput).text) :
+						(inputComponent is HSlider) ? 
+						(inputComponent as HSlider).value :
+						(inputComponent is ComboBox) ? 
+						(inputComponent as ComboBox).selectedItem.value
+						: 0);
+				} else if (_organizationChartItemStyles.hasOwnProperty(inputComponent.name)) {
+					_organizationChartItemStyles.setStyle(inputComponent.name,
 						(inputComponent is TextInput) ? 
 						parseInt((inputComponent as TextInput).text) :
 						(inputComponent is HSlider) ? 
@@ -247,13 +253,15 @@
 			}
 			
 			protected function styleObject_styleChangedHandler(event:StyleExplorerEvent):void {
-				cssOuput.text = '@namespace s "library://ns.adobe.com/flex/spark";\r@namespace mx "library://ns.adobe.com/flex/mx";\r@namespace components "cube.spark.components.*";\r@namespace spark "cube.skins.spark.*";\r@namespace business "cube.skins.spark.business.*";\r\r' +
-								_organizationChartStyles.toCSS()+"\r\r"+_hierarchicalDataGroupStyles.toCSS();
+				cssOuput.text = '@namespace s "library://ns.adobe.com/flex/spark";\r@namespace mx "library://ns.adobe.com/flex/mx";\r@namespace components "cube.spark.components.*";\r@namespace spark "cube.skins.spark.*";\r@namespace business "cube.skins.spark.business.*";\r@namespace supportClasses "cube.spark.components.supportClasses.*";\r\r' +
+								_organizationChartStyles.toCSS()+"\r\r"+_hierarchicalDataGroupStyles.toCSS()+"\r\r"+_organizationChartItemStyles.toCSS();
 				
 				if (event.currentTarget == _organizationChartStyles) {
 					organizationChart.setStyle(event.property, event.value);
 				} else if (event.currentTarget == _hierarchicalDataGroupStyles) {
 					organizationChart.dataGroup.setStyle(event.property, event.value);
+				} else if (event.currentTarget == _organizationChartItemStyles) {
+					organizationChart.dataGroup.setItemRendererStyle(event.property, event.value);
 				}
 			}
 
@@ -267,8 +275,9 @@
 			protected function organizationChart_dataGroupReadyHandler(event:OrganizationChartEvent):void {
 				_hierarchicalDataGroupStyles = new HierarchicalDataGroupStyles(organizationChart.dataGroup);
 				_hierarchicalDataGroupStyles.addEventListener(StyleExplorerEvent.STYLE_CHANGED, styleObject_styleChangedHandler, false, 0, true);
+				_organizationChartItemStyles = new OrganizationChartItemStyles();
+				_organizationChartItemStyles.addEventListener(StyleExplorerEvent.STYLE_CHANGED, styleObject_styleChangedHandler, false, 0, true);
 			}
-
 
 			protected function dataGrid_changeHandler(event:ListEvent):void {
 				organizationChart.focus(event.itemRenderer.data.id);
@@ -314,6 +323,11 @@
 							<s:Label text="Border color:" width="100%" />
 							<mx:ColorPicker id="borderColorInput" name="borderColor" selectedColor="{_organizationChartStyles.borderColor}" change="styleInput_changeHandler(event)" right="0" />
 							<mx:Spacer width="207" />
+						</s:HGroup>
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Auto-focus items:" width="100%" />
+							<mx:CheckBox id="autoFocusItemsInput" name="autoFocusItems" selected="{_organizationChartStyles.autoFocusItems}" change="styleInput_changeHandler(event)" right="0" />
+							<mx:Spacer width="216" />
 						</s:HGroup>
 						
 						<mx:Spacer width="100%" height="4" />
@@ -370,6 +384,20 @@
 							<s:Label text="Item renderer maximized height:" width="100%" />
 							<s:HSlider id="irmxhSlider" name="itemMaximizedHeight" value="{_hierarchicalDataGroupStyles.itemMaximizedHeight}" change="styleInput_changeHandler(event)" minimum="0" maximum="400" width="200" />
 							<s:TextInput id="irmxhInput" name="itemMaximizedHeight" text="{_hierarchicalDataGroupStyles.itemMaximizedHeight}" change="styleInput_changeHandler(event)" width="30" />
+						</s:HGroup>
+						
+						<mx:Spacer width="100%" height="4" />
+						<s:Label text="Node Styles" styleName="styleHeader" width="100%" />
+						<s:Rect width="100%" height="1">
+							<s:stroke>
+								<s:SolidColorStroke color="#dddddd" />
+							</s:stroke>
+						</s:Rect>
+						<mx:Spacer width="100%" height="4" />
+						<s:HGroup width="100%" verticalCenter="0" verticalAlign="middle">
+							<s:Label text="Corner radius:" width="100%" />
+							<s:HSlider id="cornerRadiusSlider" name="cornerRadius" value="{_organizationChartItemStyles.cornerRadius}" change="styleInput_changeHandler(event)" minimum="0" maximum="200" width="200" />
+							<s:TextInput id="cornerRadiusInput" name="cornerRadius" text="{_organizationChartItemStyles.cornerRadius}" change="styleInput_changeHandler(event)" width="30" />
 						</s:HGroup>
 						
 						<mx:Spacer width="100%" height="4" />

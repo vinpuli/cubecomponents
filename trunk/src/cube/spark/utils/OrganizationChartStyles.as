@@ -30,6 +30,12 @@ package cube.spark.utils {
 		public var dataGroupStyleName:String;
 		[Bindable("styleChanged")]
 		public var autoFocusItems:Boolean = true;
+		[Bindable("styleChanged")]
+		public var connectorLineColor:uint = 0xcccccc;
+		[Bindable("styleChanged")]
+		public var connectorLineAlpha:Number = 1;
+		[Bindable("styleChanged")]
+		public var connectorLineThickness:Number = 2;
 		
 		public function OrganizationChartStyles(target:OrganizationChart):void {
 			backgroundColor = target.getStyle("backgroundColor");
@@ -38,6 +44,9 @@ package cube.spark.utils {
 			borderAlpha = target.getStyle("borderAlpha");
 			dataGroupStyleName = target.getStyle("dataGroupStyleName");
 			autoFocusItems = target.getStyle("autoFocusItems");
+			connectorLineColor = target.getStyle("connectorLineColor");
+			connectorLineAlpha = target.getStyle("connectorLineAlpha");
+			connectorLineThickness = target.getStyle("connectorLineThickness");
 		}
 		
 		public function setStyle(propertyName:String, value:*):void {
@@ -52,7 +61,8 @@ package cube.spark.utils {
 			output += "\r{\r";
 			for (propertyName in _customStyles) {
 				if (propertyName == "backgroundColor" ||
-					propertyName == "borderColor"
+					propertyName == "borderColor" ||
+					propertyName == "connectorLineColor"
 				) {
 					output += "\t"+propertyName+": #"+(_customStyles[propertyName] as uint).toString(16)+";\r";
 				} else {

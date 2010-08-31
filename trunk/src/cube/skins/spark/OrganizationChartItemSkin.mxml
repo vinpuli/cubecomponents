@@ -43,7 +43,7 @@
 			 */
 			override protected function updateDisplayList(unscaledWidth:Number, unscaledHeight:Number) : void
 			{
-				var cr:Number = getStyle("cornerRadius");
+				var cr:Number = hostComponent.getStyle("cornerRadius");
 				
 				cornerRadius = cr;
 				shadow.radiusX = cornerRadius;
@@ -61,6 +61,7 @@
 				super.updateDisplayList(unscaledWidth, unscaledHeight);
 			}
 			
+			[Bindable]
 			private var cornerRadius:Number = 12;
 		]]>        
 	</fx:Script>
@@ -204,11 +205,13 @@
 	<!--- @copy spark.components.supportClasses.ButtonBase#labelDisplay -->
 	<s:Button id="openButton" left="0" right="0" height="18" bottom="0" focusEnabled="false"
 			  skinClass="cube.skins.spark.OrganizationChartItemButtonSkin"
-			  visible="{hostComponent.hasChildren}" />
+			  visible="{hostComponent.hasChildren}" cornerRadius="{cornerRadius}" />
 	<s:Label id="labelDisplay"
 			 text="{hostComponent.label}"
 			 textAlign="center"
 			 verticalAlign="middle"
+			 mouseEnabled="false"
+			 mouseChildren="false"
 			 maxDisplayedLines="1"
 			 rotation="0"
 			 rotation.minimized="90"

@@ -28,6 +28,8 @@ package cube.spark.utils {
 		public var borderAlpha:Number = 1;
 		[Bindable("styleChanged")]
 		public var dataGroupStyleName:String;
+		[Bindable("styleChanged")]
+		public var autoFocusItems:Boolean = true;
 		
 		public function OrganizationChartStyles(target:OrganizationChart):void {
 			backgroundColor = target.getStyle("backgroundColor");
@@ -35,6 +37,7 @@ package cube.spark.utils {
 			borderColor = target.getStyle("borderColor");
 			borderAlpha = target.getStyle("borderAlpha");
 			dataGroupStyleName = target.getStyle("dataGroupStyleName");
+			autoFocusItems = target.getStyle("autoFocusItems");
 		}
 		
 		public function setStyle(propertyName:String, value:*):void {

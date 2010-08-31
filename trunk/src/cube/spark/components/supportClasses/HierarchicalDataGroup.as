@@ -73,6 +73,8 @@ package cube.spark.components.supportClasses {
 	[Style(name="verticalPadding", type="Number", format="Length", inherit="no")]
 	[Exclude]
 	[Style(name="autoFocusItems", type="Boolean", inherit="no")]
+	[Exclude]
+	[Style(name="cornerRadius", type="Number", inherit="no")]
 	
 	[ResourceBundle("components")]
 	
@@ -190,6 +192,18 @@ package cube.spark.components.supportClasses {
 						invalidateLayout(LayoutUpdateType.STATUS);
 						break;
 				}
+			}
+			super.setStyle(styleProp, newValue);
+		}
+		
+		public function setItemRendererStyle(styleProp:String, newValue:*):void {
+			if (!_itemRenderers) { return; }
+			const len:int = _itemRenderers.length;
+			var itemRenderer:IOrganizationChartItemRenderer;
+			var i:int;
+			for (i=0; i<len; i++) {
+				itemRenderer = _itemRenderers[i];
+				itemRenderer.setStyle(styleProp, newValue);
 			}
 			super.setStyle(styleProp, newValue);
 		}
@@ -438,6 +452,7 @@ package cube.spark.components.supportClasses {
 					if (!item) {
 						throw new Error("ItemRenderer does not implement IOrganizationChartItemRenderer");
 					} else {
+						item.setStyle("cornerRadius", getStyle("cornerRadius"));
 						item.addEventListener(MouseEvent.CLICK, item_clickHandler, false, 0, true);
 						item.addEventListener("disconnectedChange", itemRenderer_disconnectedChangeHandler, false, 0, true);
 						item.addEventListener("collapsedChange", itemRenderer_collapsedChangeHandler, false, 0, true);
@@ -535,6 +550,7 @@ package cube.spark.components.supportClasses {
 					this.itemMaximizedHeight = 120;
 					this.horizontalPadding = 60;
 					this.verticalPadding = 60;
+					this.cornerRadius = 12;
 				}
 				styleManager.setStyleDeclaration("cube.spark.components.supportClasses.HierarchicalDataGroup", styleDeclaration, true);
 			}

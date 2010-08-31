@@ -37,9 +37,13 @@ package cube.spark.components.supportClasses {
 	[SkinState("normalDisabled")]
 	[SkinState("maximizedDisabled")]
 	
+	[Style(name="cornerRadius", type="Number", inherit="no")]
+	
 	public class OrganizationChartItem extends SkinnableComponent implements IOrganizationChartItemRenderer {
 		
 		include "../../core/Version.as";
+		
+		private const defaultStylesSet:Boolean = setupDefaultInheritingStyles();
 		
 		private var _data:Object;
 		private var _itemIndex:int;
@@ -52,7 +56,6 @@ package cube.spark.components.supportClasses {
 		public var openButton:Button;
 		
 		public function OrganizationChartItem():void {
-			setupDefaultInheritingStyles();
 			addEventListener(MouseEvent.MOUSE_OVER, item_mouseHandler, false, 0, true);
 			addEventListener(MouseEvent.MOUSE_OUT, item_mouseHandler, false, 0, true);
 			super();
@@ -217,11 +220,16 @@ package cube.spark.components.supportClasses {
 			super.findSkinParts();
 		}
 		
-		private function setupDefaultInheritingStyles():void {
-			const styleDeclaration:CSSStyleDeclaration = new CSSStyleDeclaration(new CSSSelector("cube.spark.components.supportClasses.OrganizationChartItem"), styleManager);
-			styleDeclaration.defaultFactory = function():void {
-				this.skinClass = OrganizationChartItemSkin;
+		private function setupDefaultInheritingStyles():Boolean {
+			if (!styleManager.getStyleDeclaration("cube.spark.components.supportClasses.OrganizationChartItem")) {
+				const styleDeclaration:CSSStyleDeclaration = new CSSStyleDeclaration(new CSSSelector("cube.spark.components.supportClasses.OrganizationChartItem"), styleManager);
+				styleDeclaration.defaultFactory = function():void {
+					this.skinClass = OrganizationChartItemSkin;
+					this.cornerRadius = 12;
+				}
+				styleManager.setStyleDeclaration("cube.spark.components.supportClasses.OrganizationChartItem", styleDeclaration, true);
 			}
+			return true;
 		}
 		
 		protected function connector_layoutChangeHandler(event:ConnectorEvent):void {

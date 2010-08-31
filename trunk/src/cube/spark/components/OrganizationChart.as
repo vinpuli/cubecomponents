@@ -70,6 +70,18 @@ package cube.spark.components {
 			}
 		}
 		
+		override public function setStyle(styleProp:String, newValue:*):void {
+			switch (styleProp) {
+				case "autoFocusItems" :
+					if (dataGroup) {
+						dataGroup.setStyle(styleProp, newValue);
+					}
+					break;
+					
+			}
+			super.setStyle(styleProp, newValue);
+		}
+		
 		override protected function partAdded(partName:String, instance:Object):void {
 			super.partAdded(partName, instance);
 			if (instance == dataGroup) {

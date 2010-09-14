@@ -1,6 +1,7 @@
 package cube.spark.components.supportClasses {
 	
 	import cube.skins.spark.OrganizationChartItemSkin;
+	import cube.skins.spark.SkinFactory;
 	import cube.spark.events.ConnectorEvent;
 	import cube.spark.layouts.supportClasses.LayoutData;
 	
@@ -22,6 +23,7 @@ package cube.spark.components.supportClasses {
 	import spark.components.supportClasses.SkinnableComponent;
 	import spark.effects.Animate;
 	import spark.effects.Move;
+	import spark.effects.easing.Elastic;
 	import spark.effects.easing.Sine;
 	
 	[SkinState("minimizedUp")]
@@ -51,6 +53,8 @@ package cube.spark.components.supportClasses {
 		private var _disconnected:Boolean = false;
 		private var _collapsed:Boolean = false;
 		private var _hasChildren:Boolean = false;
+		private var _currentAnimation:Move;
+		private var _skinFactory:SkinFactory;
 		
 		[SkinPart(required="false")]
 		public var openButton:Button;
@@ -152,16 +156,20 @@ package cube.spark.components.supportClasses {
 		}
 		
 		public function animateTo(xFrom:Number, yFrom:Number, xTo:Number, yTo:Number):void {
-			const move:Move = new Move(this);
-			move.addEventListener(EffectEvent.EFFECT_UPDATE, move_updateHandler, false, 0, true);
-			move.duration = 300;
-			move.easer = new Sine();
-			move.xFrom = xFrom;
-			move.xTo = xTo;
-			move.yFrom = yFrom;
-			move.yTo = yTo;
-			move.triggerEvent = null;
-			move.play();
+			if (_currentAnimation && _currentAnimation.isPlaying) {
+				_currentAnimation.removeEventListener(EffectEvent.EFFECT_UPDATE, move_updateHandler);
+				_currentAnimation.stop();
+			}
+			_currentAnimation = new Move(this);
+			_currentAnimation.addEventListener(EffectEvent.EFFECT_UPDATE, move_updateHandler, false, 0, true);
+			_currentAnimation.duration = 300;
+			_currentAnimation.easer = new Sine();
+			_currentAnimation.xFrom = xFrom;
+			_currentAnimation.xTo = xTo;
+			_currentAnimation.yFrom = yFrom;
+			_currentAnimation.yTo = yTo;
+			_currentAnimation.triggerEvent = null;
+			_currentAnimation.play();
 		}
 		
 		override protected function getCurrentSkinState():String {
@@ -188,9 +196,14 @@ package cube.spark.components.supportClasses {
 		
 		override public function setStyle(styleProp:String, newValue:*):void {
 			if (styleProp == "skinClass") {
-				if (getStyle("skinClass") == newValue) {
-					return;
+				if (!_skinFactory) {
+					_skinFactory = new SkinFactory();
+					super.setStyle("skinFactory", _skinFactory);
 				}
+				if (_skinFactory.addGenerator(newValue)) {
+					styleChanged("skinFactory");
+				}
+				return;
 			}
 			super.setStyle(styleProp, newValue);
 		}

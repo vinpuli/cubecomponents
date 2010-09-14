@@ -4,6 +4,8 @@ package cube.spark.layouts.supportClasses {
 		
 		private var _originalX:Number;
 		private var _originalY:Number;
+		private var _initialX:Number;
+		private var _initialY:Number;
 		private var _x:Number;
 		private var _y:Number;
 		private var _state:int;
@@ -29,6 +31,22 @@ package cube.spark.layouts.supportClasses {
 		
 		public function set originalY(value:Number):void {
 			_originalY = value;
+		}
+		
+		public function get initialX():Number {
+			return _initialX;
+		}
+		
+		public function set initialX(value:Number):void {
+			_initialX = value;
+		}
+		
+		public function get initialY():Number {
+			return _initialY;
+		}
+		
+		public function set initialY(value:Number):void {
+			_initialY = value;
 		}
 		
 		public function get x():Number {

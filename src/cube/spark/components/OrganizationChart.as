@@ -20,11 +20,11 @@ package cube.spark.components {
 	
 	[Event(name="dataGroupReady", type="cube.spark.events.OrganizationChartEvent")]
 	
-	[Style(name="dataGroupStyleName", type="String", inherit="no", theme="spark")]
-	[Style(name="autoFocusItems", type="Boolean", inherit="no", theme="spark")]
-	[Style(name="connectorLineColor", type="uint", format="Color", inherit="no", theme="spark")]
-	[Style(name="connectorLineAlpha", type="Number", inherit="no", theme="spark")]
-	[Style(name="connectorLineThickness", type="Number", inherit="no", theme="spark")]
+	[Style(name="dataGroupStyleName", type="String", inherit="no")]
+	[Style(name="autoFocusItems", type="Boolean", inherit="no")]
+	[Style(name="connectorLineColor", type="uint", format="Color", inherit="no")]
+	[Style(name="connectorLineAlpha", type="Number", inherit="no")]
+	[Style(name="connectorLineThickness", type="Number", inherit="no")]
 	
 	[ResourceBundle("components")]
 	
@@ -107,18 +107,21 @@ package cube.spark.components {
 		}
 		
 		protected function setupDefaultInheritingStyles():Boolean {
-			const styleDeclaration:CSSStyleDeclaration = new CSSStyleDeclaration(new CSSSelector("cube.spark.components.OrganizationChart"), styleManager);
-			styleDeclaration.defaultFactory = function():void {
-				this.skinClass = OrganizationChartSkin;
-				this.backgroundColor = 0xffffff;
-				this.backgroundAlpha = 1;
-				this.borderColor = 0x000000;
-				this.borderAlpha = 1;
-				this.autoFocusItems = true;
-				this.connectorLineColor = 0xcccccc;
-				this.connectorLineAlpha = 1;
-				this.connectorLineThickness = 2;
-			}
+			//if (!styleManager.getStyleDeclaration("cube.spark.components.OrganizationChart")) {
+				const styleDeclaration:CSSStyleDeclaration = new CSSStyleDeclaration(new CSSSelector("cube.spark.components.OrganizationChart"), styleManager);
+				styleDeclaration.defaultFactory = function():void {
+					this.skinClass = OrganizationChartSkin;
+					this.backgroundColor = 0xffffff;
+					this.backgroundAlpha = 1;
+					this.borderColor = 0x000000;
+					this.borderAlpha = 1;
+					this.autoFocusItems = true;
+					this.connectorLineColor = 0xcccccc;
+					this.connectorLineAlpha = 1;
+					this.connectorLineThickness = 2;
+				}
+				//styleManager.setStyleDeclaration("cube.spark.components.OrganizationChart", styleDeclaration, true);
+			//}
 			return true;
 		}
 		

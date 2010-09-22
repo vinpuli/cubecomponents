@@ -161,7 +161,6 @@ package cube.spark.components.supportClasses {
 		}
 		
 		public function animateTo(xFrom:Number, yFrom:Number, xTo:Number, yTo:Number):void {
-<<<<<<< .mine
 			stopAnimations();
 			if (isNaN(xFrom) || isNaN(yFrom) || ((xFrom == xTo) && (yFrom == yTo))) {
 				x = xTo;
@@ -179,22 +178,6 @@ package cube.spark.components.supportClasses {
 				_currentAnimation.triggerEvent = null;
 				_currentAnimation.play();
 			}
-=======
-			if (_currentAnimation && _currentAnimation.isPlaying) {
-				_currentAnimation.removeEventListener(EffectEvent.EFFECT_UPDATE, move_updateHandler);
-				_currentAnimation.stop();
-			}
-			_currentAnimation = new Move(this);
-			_currentAnimation.addEventListener(EffectEvent.EFFECT_UPDATE, move_updateHandler, false, 0, true);
-			_currentAnimation.duration = 300;
-			_currentAnimation.easer = new Sine();
-			_currentAnimation.xFrom = xFrom;
-			_currentAnimation.xTo = xTo;
-			_currentAnimation.yFrom = yFrom;
-			_currentAnimation.yTo = yTo;
-			_currentAnimation.triggerEvent = null;
-			_currentAnimation.play();
->>>>>>> .r15
 		}
 		
 		protected function stopAnimations():void {
@@ -232,18 +215,11 @@ package cube.spark.components.supportClasses {
 					_skinFactory = new SkinFactory();
 					super.setStyle("skinFactory", _skinFactory);
 				}
-<<<<<<< .mine
 				if (_skinFactory.addGenerator(newValue)) {
 					styleChanged("skinFactory");
 					dispatchEvent(new Event("dataChange"));
 				}
 				return;
-=======
-				if (_skinFactory.addGenerator(newValue)) {
-					styleChanged("skinFactory");
-				}
-				return;
->>>>>>> .r15
 			}
 			super.setStyle(styleProp, newValue);
 		}

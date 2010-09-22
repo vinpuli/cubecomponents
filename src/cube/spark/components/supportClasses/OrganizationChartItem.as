@@ -80,6 +80,7 @@ package cube.spark.components.supportClasses {
 			//if (_data.state != oldState) {
 				invalidateSkinState();
 			//}
+			stopAnimations();
 			dispatchEvent(new Event("dataChange"));
 		}
 		
@@ -155,7 +156,30 @@ package cube.spark.components.supportClasses {
 			// void
 		}
 		
+		protected function get activeSkinGenerator():Class {
+			return _skinFactory.activeGenerator;
+		}
+		
 		public function animateTo(xFrom:Number, yFrom:Number, xTo:Number, yTo:Number):void {
+<<<<<<< .mine
+			stopAnimations();
+			if (isNaN(xFrom) || isNaN(yFrom) || ((xFrom == xTo) && (yFrom == yTo))) {
+				x = xTo;
+				y = yTo;
+				move_updateHandler(null);
+			} else {
+				_currentAnimation = new Move(this);
+				_currentAnimation.addEventListener(EffectEvent.EFFECT_UPDATE, move_updateHandler, false, 0, true);
+				_currentAnimation.duration = 500;
+				_currentAnimation.easer = new Sine();
+				_currentAnimation.xFrom = xFrom;
+				_currentAnimation.xTo = xTo;
+				_currentAnimation.yFrom = yFrom;
+				_currentAnimation.yTo = yTo;
+				_currentAnimation.triggerEvent = null;
+				_currentAnimation.play();
+			}
+=======
 			if (_currentAnimation && _currentAnimation.isPlaying) {
 				_currentAnimation.removeEventListener(EffectEvent.EFFECT_UPDATE, move_updateHandler);
 				_currentAnimation.stop();
@@ -170,6 +194,14 @@ package cube.spark.components.supportClasses {
 			_currentAnimation.yTo = yTo;
 			_currentAnimation.triggerEvent = null;
 			_currentAnimation.play();
+>>>>>>> .r15
+		}
+		
+		protected function stopAnimations():void {
+			if (_currentAnimation && _currentAnimation.isPlaying) {
+				_currentAnimation.removeEventListener(EffectEvent.EFFECT_UPDATE, move_updateHandler);
+				_currentAnimation.stop();
+			}
 		}
 		
 		override protected function getCurrentSkinState():String {
@@ -200,10 +232,18 @@ package cube.spark.components.supportClasses {
 					_skinFactory = new SkinFactory();
 					super.setStyle("skinFactory", _skinFactory);
 				}
+<<<<<<< .mine
+				if (_skinFactory.addGenerator(newValue)) {
+					styleChanged("skinFactory");
+					dispatchEvent(new Event("dataChange"));
+				}
+				return;
+=======
 				if (_skinFactory.addGenerator(newValue)) {
 					styleChanged("skinFactory");
 				}
 				return;
+>>>>>>> .r15
 			}
 			super.setStyle(styleProp, newValue);
 		}

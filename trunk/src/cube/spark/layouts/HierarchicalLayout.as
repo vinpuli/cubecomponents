@@ -90,10 +90,14 @@ package cube.spark.layouts {
 			for (i=0; i<numVisibleItems; i++) {
 				_memory.position = _memoryPointerCollection.visibleItemsPointer+4*i;
 				memoryIndex = _memory.readInt();
-				layoutData = new LayoutData();
 				itemData = _list.getItemAt(memoryIndex);
-				for (property in itemData) {
-					layoutData[property] = itemData[property];
+				if (!(itemData is LayoutData)) {
+					layoutData = new LayoutData();
+					for (property in itemData) {
+						layoutData[property] = itemData[property];
+					}
+				} else {
+					layoutData = itemData as LayoutData;
 				}
 				_memory.position = _memoryPointerCollection.ownerVisibleItemsPointer+4*i;
 				ownerMemoryIndex = _memory.readInt();

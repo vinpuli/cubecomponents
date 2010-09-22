@@ -496,6 +496,8 @@ package cube.spark.components.supportClasses {
 				item.removeEventListener("disconnectedChange", itemRenderer_disconnectedChangeHandler);
 				item.removeEventListener("collapsedChange", itemRenderer_collapsedChangeHandler);
 				layoutData = _visibleItemsData[i];
+<<<<<<< .mine
+=======
 				if (_animationFlag) {
 					if ((layoutData.originalX == 0) && (layoutData.originalY == 0)) {
 						layoutData.originalX = layoutData.initialX;
@@ -506,6 +508,7 @@ package cube.spark.components.supportClasses {
 					item.x = layoutData.x;
 					item.y = layoutData.y;
 				}
+>>>>>>> .r15
 				dw = getStyle((layoutData.state == 0) ? "itemMinimizedWidth" : (layoutData.state == 1) ? "itemNormalWidth" : "itemMaximizedWidth");
 				dh = getStyle((layoutData.state == 0) ? "itemMinimizedHeight" : (layoutData.state == 1) ? "itemNormalHeight" : "itemMaximizedHeight");
 				item.width = dw;
@@ -516,6 +519,13 @@ package cube.spark.components.supportClasses {
 				item.hasChildren = layoutData.hasChildren;
 				item.setStyle("skinClass", (layoutData.itemRendererSkin) ? layoutData.itemRendererSkin : getStyle("itemRendererSkin"));
 				item.visible = true;
+				if (_animationFlag) {
+					item.animateTo(layoutData.initialX, layoutData.initialY, layoutData.x, layoutData.y);
+					layoutData.initialX = layoutData.initialY = Number.NaN;
+				} else {
+					item.x = layoutData.x;
+					item.y = layoutData.y;
+				}
 				// re-initiate binds
 				item.addEventListener("disconnectedChange", itemRenderer_disconnectedChangeHandler, false, 0, true);
 				item.addEventListener("collapsedChange", itemRenderer_collapsedChangeHandler, false, 0, true);

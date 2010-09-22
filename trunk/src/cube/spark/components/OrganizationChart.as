@@ -39,6 +39,8 @@ package cube.spark.components {
 		private var _dataProvider:IList;
 		private var _doLaterSetDataProvider:Boolean = false;
 		private var _invalidationTimeout:Boolean = false;
+		private var _scaleX:Number = 1;
+		private var _scaleY:Number = 1;
 		
 		[SkinPart(required="true")]
 		public var dataGroup:HierarchicalDataGroup;
@@ -65,6 +67,20 @@ package cube.spark.components {
 		
 		public function OrganizationChart():void {
 			super();
+		}
+		
+		override public function set scaleX(value:Number):void {
+			_scaleX = value;
+			if (dataGroup) {
+				dataGroup.scaleX = value;
+			}
+		}
+		
+		override public function set scaleY(value:Number):void {
+			_scaleY = value;
+			if (dataGroup) {
+				dataGroup.scaleY = value;
+			}
 		}
 		
 		public function focus(target:*):void {
@@ -99,6 +115,8 @@ package cube.spark.components {
 				}
 				dataGroup.setStyle("autoFocusItems", getStyle("autoFocusItems"));
 				dataGroup.setStyle("connectorLineColor", getStyle("connectorLineColor"));
+				dataGroup.scaleX = _scaleX;
+				dataGroup.scaleY = _scaleY;
 				dispatchEvent(new OrganizationChartEvent(OrganizationChartEvent.DATA_GROUP_READY, 0, null));
 			} else if (instance == scroller) {
 				scroller.horizontalScrollBar.addEventListener(Event.CHANGE, scroller_changeHandler, false, 0, true);

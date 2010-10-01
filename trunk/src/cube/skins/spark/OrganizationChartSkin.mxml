@@ -55,6 +55,10 @@
             }
         ]]>        
     </fx:Script>
+	
+	<fx:Declarations>
+		<supportClasses:ScrollDragHandler id="scrollDragHandler" target="{dataGroup}" />
+	</fx:Declarations>
     
     <s:states>
         <s:State name="normal" />
@@ -76,7 +80,7 @@
 	</s:Rect>
     
 	<s:Scroller id="scroller" left="0" top="0" right="0" bottom="0" 
-				hasFocusableChildren="true" minViewportInset="1" mouseChildren="true">
+				hasFocusableChildren="true" minViewportInset="1" mouseChildren="true" >
 		<supportClasses:HierarchicalDataGroup id="dataGroup" left="0" right="0" top="0" bottom="0" />
 	</s:Scroller>
 

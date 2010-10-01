@@ -11,11 +11,16 @@ package cube.spark.events {
 		public static const ITEM_MAXIMIZE_STATE:String = "itemMaximizeState";
 		public static const DATA_GROUP_READY:String = "dataGroupReady";
 		public static const UPDATE_COMPLETE:String = "updateComplete";
+		public static const COLLAPSED_CHANGE:String = "collapsedChange";
+		public static const DISCONNECTED_CHANGE:String = "disconnectedChange";
+		public static const RENDERER_SKIN_READY:String = "rendererSkinReady";
 		
 		private var _listIndex:int;
 		private var _itemRenderer:IOrganizationChartItemRenderer;
 		
-		public function OrganizationChartEvent(type:String, _listIndex:int, _itemRenderer:IOrganizationChartItemRenderer, bubbles:Boolean=false, cancelable:Boolean=false):void {
+		public function OrganizationChartEvent(type:String, listIndex:int, itemRenderer:IOrganizationChartItemRenderer, bubbles:Boolean=false, cancelable:Boolean=false):void {
+			_listIndex = listIndex;
+			_itemRenderer = itemRenderer;
 			super(type, bubbles, cancelable);
 		}
 		

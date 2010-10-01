@@ -1,6 +1,6 @@
 package cube.spark.layouts {
 	
-	import cmodule.C__work_production_cube_CSComponents_libs_OrganizationChartLayout.CLibInit;
+	import cmodule.OrganizationChartLayout.CLibInit;
 	
 	import cube.spark.components.supportClasses.HierarchicalDataGroup;
 	import cube.spark.layouts.supportClasses.LayoutData;
@@ -23,7 +23,7 @@ package cube.spark.layouts {
 		
 		include "../core/Version.as";
 		
-		private static var _clib:Object;
+		private var _clib:Object;
 		
 		private var _list:IList;
 		private var _cByteSize:int;
@@ -78,7 +78,6 @@ package cube.spark.layouts {
 			const measuredSize:Array = _clib.calculate(horizontalPadding, verticalPadding, area.x, area.y, area.width, area.height, updateType);
 			const numVisibleItems:int = measuredSize.pop() as int;
 			const layoutDataCollection:Vector.<LayoutData> = new Vector.<LayoutData>(numVisibleItems, true);
-			var itemData:Object;
 			var layoutData:LayoutData;
 			var memoryIndex:int;
 			var property:String;
@@ -90,15 +89,7 @@ package cube.spark.layouts {
 			for (i=0; i<numVisibleItems; i++) {
 				_memory.position = _memoryPointerCollection.visibleItemsPointer+4*i;
 				memoryIndex = _memory.readInt();
-				itemData = _list.getItemAt(memoryIndex);
-				if (!(itemData is LayoutData)) {
-					layoutData = new LayoutData();
-					for (property in itemData) {
-						layoutData[property] = itemData[property];
-					}
-				} else {
-					layoutData = itemData as LayoutData;
-				}
+				layoutData = _list.getItemAt(memoryIndex) as LayoutData;
 				_memory.position = _memoryPointerCollection.ownerVisibleItemsPointer+4*i;
 				ownerMemoryIndex = _memory.readInt();
 				_memory.position = _memoryPointerCollection.idPointer+4*memoryIndex;
@@ -141,7 +132,7 @@ package cube.spark.layouts {
 		private function initialize():void {
 			if (!_clib) {
 				const cLibInit:CLibInit = new CLibInit();
-				const ns:Namespace = new Namespace("cmodule.C__work_production_cube_CSComponents_libs_OrganizationChartLayout");
+				const ns:Namespace = new Namespace("cmodule.OrganizationChartLayout");
 				_clib = cLibInit.init();
 				_memory = (ns::gstate).ds;
 			}
@@ -159,12 +150,11 @@ package cube.spark.layouts {
 		}
 		
 		private function fillMemory():void {
-			const startTime:int = getTimer();
 			const len:int = _list.length;
-			var listItem:Object;
+			var listItem:LayoutData;
 			var i:int;
 			for (i=0; i<len; i++) {
-				listItem = _list.getItemAt(i);
+				listItem = _list.getItemAt(i) as LayoutData;
 				_memoryPointerCollection.idBytes.writeInt(listItem.id);
 				_memoryPointerCollection.ownerIdBytes.writeInt(listItem.ownerId);
 				_memoryPointerCollection.minimizedWidthBytes.writeFloat(listItem.minimizedWidth);
@@ -199,7 +189,7 @@ package cube.spark.layouts {
 			_memoryPointerCollection.flush();
 		}
 		
-		public function writeBytes(layoutData:Object, listIndex:int=-1):void {
+		public function writeBytes(layoutData:LayoutData, listIndex:int=-1):void {
 			const listIndex:int = (listIndex >= 0) ? listIndex : layoutData.listIndex;
 			_memory.position = _memoryPointerCollection.idPointer+4*listIndex;
 			_memory.writeInt(layoutData.id);

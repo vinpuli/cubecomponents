@@ -16,7 +16,16 @@ package cube.spark.layouts.supportClasses {
 		private var _disconnected:Boolean;
 		private var _collapsed:Boolean;
 		private var _hasChildren:Boolean;
+		private var _layoutDelta:Boolean = false;
 		
+		public function get layoutDelta():Boolean {
+			return _layoutDelta;
+		}
+
+		public function set layoutDelta(value:Boolean):void {
+			_layoutDelta = value;
+		}
+
 		public function get originalX():Number {
 			return _originalX;
 		}
@@ -127,6 +136,20 @@ package cube.spark.layouts.supportClasses {
 		
 		public function set hasChildren(value:Boolean):void {
 			_hasChildren = value;
+		}
+		
+		public function toString():String {
+			var str:String = new String();
+			str += "id: "+_id.toString()+"\r";
+			str += "ownerId: "+_ownerId.toString()+"\r";
+			str += "disconnected: "+_disconnected+"\r";
+			str += "collapsed: "+_collapsed+"\r";
+			str += "hasChildren: "+_hasChildren+"\r";
+			str += "layoutDelta: "+_layoutDelta+"\r";
+			for (var s:String in this) {
+				str += s+": "+this[s]+"\r";
+			}
+			return str;
 		}
 	}
 }

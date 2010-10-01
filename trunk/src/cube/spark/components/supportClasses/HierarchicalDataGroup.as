@@ -11,51 +11,32 @@ package cube.spark.components.supportClasses {
 	import flash.events.MouseEvent;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
-	import flash.utils.ByteArray;
-	import flash.utils.Endian;
-	import flash.utils.getQualifiedClassName;
 	import flash.utils.getTimer;
 	
 	import mx.collections.ArrayCollection;
 	import mx.collections.IList;
-	import mx.controls.ComboBase;
-	import mx.controls.dataGridClasses.DataGridItemRenderer;
 	import mx.core.ClassFactory;
 	import mx.core.IFactory;
-	import mx.core.IVisualElement;
 	import mx.core.UIComponent;
 	import mx.core.mx_internal;
-	import mx.effects.IEffectInstance;
 	import mx.events.CollectionEvent;
 	import mx.events.CollectionEventKind;
 	import mx.events.EffectEvent;
 	import mx.events.FlexEvent;
-	import mx.events.ListEvent;
-	import mx.events.ListEventReason;
 	import mx.events.PropertyChangeEvent;
 	import mx.events.PropertyChangeEventKind;
 	import mx.events.ResizeEvent;
-	import mx.managers.IFocusManagerComponent;
 	import mx.styles.CSSSelector;
 	import mx.styles.CSSStyleDeclaration;
 	
-	import spark.components.ComboBox;
 	import spark.components.DataGroup;
-	import spark.components.IItemRendererOwner;
 	import spark.components.ResizeMode;
 	import spark.components.supportClasses.Skin;
-	import spark.components.supportClasses.SkinnableComponent;
 	import spark.effects.Animate;
-	import spark.effects.Resize;
 	import spark.effects.animation.MotionPath;
 	import spark.effects.animation.SimpleMotionPath;
-	import spark.effects.easing.Bounce;
-	import spark.effects.easing.Elastic;
 	import spark.effects.easing.Sine;
-	import spark.effects.supportClasses.ResizeInstance;
 	import spark.events.RendererExistenceEvent;
-	import spark.skins.spark.DefaultComplexItemRenderer;
-	import spark.skins.spark.DefaultItemRenderer;
 	
 	use namespace mx_internal;
 	
@@ -63,6 +44,8 @@ package cube.spark.components.supportClasses {
 	[Event(name="itemNormalState", type="cube.spark.events.OrganizationChartEvent")]
 	[Event(name="itemMaximizeState", type="cube.spark.events.OrganizationChartEvent")]
 	[Event(name="updateComplete", type="cube.spark.events.OrganizationChartEvent")]
+	[Event(name="collapsedChange", type="cube.spark.events.OrganizationChartEvent")]
+	[Event(name="disconnectedChange", type="cube.spark.events.OrganizationChartEvent")]
 	
 	[Style(name="itemMinimizedWidth", type="Number", format="Length", inherit="no")]
 	[Style(name="itemMinimizedHeight", type="Number", format="Length", inherit="no")]
@@ -84,6 +67,7 @@ package cube.spark.components.supportClasses {
 		
 		private const defaultStylesSet:Boolean = setupDefaultInheritingStyles();
 		
+		private var _dragPane:UIComponent;
 		private var _connectorCanvas:UIComponent;
 		private var _hierarchicalLayout:HierarchicalLayout;
 		private var _doLaterSetHierarchicalLayout:Boolean = false;
@@ -97,10 +81,23 @@ package cube.spark.components.supportClasses {
 		private var _animationFlag:Boolean = false;
 		private var _pendingUpdateType:int = 0;
 		private var _autoFocusTarget:int = -1;
+		private var _autoFocusTargetOnUpdate:int = -1;
 		private var _currentFocusAnimation:Animate;
+		private var _centerPos:Point;
+		private var _ignoreLayoutDelta:Boolean = false;
 		
 		public function HierarchicalDataGroup():void {
-			addEventListener(FlexEvent.CREATION_COMPLETE, onCreationComplete, false, 0, true);
+			addEventListener(FlexEvent.CREATION_COMPLETE, self_creationCompleteHandler, false, 0, true);
+		}
+		
+		override public function set horizontalScrollPosition(value:Number):void {
+			super.horizontalScrollPosition = value;
+			renderDragPane();
+		}
+		
+		override public function set verticalScrollPosition(value:Number):void {
+			super.verticalScrollPosition = value;
+			renderDragPane();
 		}
 		
 		override public function get contentWidth():Number {
@@ -120,7 +117,6 @@ package cube.spark.components.supportClasses {
 		override public function set dataProvider(value:IList):void {
 			_dataProvider = value;
 			if (initialized) {
-				injectDefaultProperties(_dataProvider);
 				(_dataProvider as ArrayCollection).source.sort(dataProvider_sortFunction);
 				_dataProvider.addEventListener(CollectionEvent.COLLECTION_CHANGE, dataProvider_collectionChangeHandler, false, 0, true);
 				_hierarchicalLayout.list = value;
@@ -142,6 +138,26 @@ package cube.spark.components.supportClasses {
 			}
 			_itemRendererFieldOrFunctionChanged = true;
 			invalidateProperties();
+		}
+		
+		public function get visibleItemsData():Vector.<LayoutData> {
+			return _visibleItemsData;
+		}
+		
+		public function get connectorCanvas():UIComponent {
+			return _connectorCanvas;
+		}
+		
+		public function get itemRenderers():Vector.<IOrganizationChartItemRenderer> {
+			return _itemRenderers;
+		}
+		
+		public function get actualWidth():Number {
+			return (resizeMode == ResizeMode.SCALE) ? measuredWidth : unscaledWidth;
+		}
+		
+		public function get actualHeight():Number {
+			return (resizeMode == ResizeMode.SCALE) ? measuredHeight : unscaledHeight;
 		}
 		
 		override public function setStyle(styleProp:String, newValue:*):void {
@@ -217,24 +233,6 @@ package cube.spark.components.supportClasses {
 			return;
 		}
 		
-		private function injectDefaultProperties(target:IList):void {
-			const len:int = target.length;
-			var item:Object;
-			var i:int;
-			for (i=0; i<len; i++) {
-				item = target.getItemAt(i);
-				if (!item.hasOwnProperty("state")) { item.state = 0; }
-				item.collapsed = false;
-				item.hasChildren = true;
-				item.minimizedWidth = getStyle("itemMinimizedWidth") as Number;
-				item.minimizedHeight = getStyle("itemMinimizedHeight") as Number;
-				item.normalWidth = getStyle("itemNormalWidth") as Number;
-				item.normalHeight = getStyle("itemNormalHeight") as Number;
-				item.maximizedWidth = getStyle("itemMaximizedWidth") as Number;
-				item.maximizedHeight = getStyle("itemMaximizedHeight") as Number;
-			}
-		}
-		
 		public function invalidateLayout(updateType:int):void {
 			_pendingUpdateType = (updateType > _pendingUpdateType) ? updateType : _pendingUpdateType;
 			addEventListener(Event.ENTER_FRAME, dataGroup_invalidateHandler, false, 0, true);
@@ -269,9 +267,14 @@ package cube.spark.components.supportClasses {
 				height
 			);
 			var timer:int = getTimer();
+			var newVisibleItemsData:Vector.<LayoutData>;
 			if (_hierarchicalLayout) {
-				_visibleItemsData = _hierarchicalLayout.calculateArea(area, horizontalPadding, verticalPadding, _animationFlag, _pendingUpdateType);
+				newVisibleItemsData = _hierarchicalLayout.calculateArea(area, horizontalPadding, verticalPadding, _animationFlag, _pendingUpdateType);
 			}
+			if (_visibleItemsData) {
+				resetLayoutForNewItems(newVisibleItemsData);
+			}
+			_visibleItemsData = newVisibleItemsData;
 			trace("Alchemy in "+(getTimer()-timer)+" ms (updateType: "+_pendingUpdateType+")");
 			_pendingUpdateType = 0;
 			renderViewableItemsOnly();
@@ -281,145 +284,24 @@ package cube.spark.components.supportClasses {
 			trace("Rendering in "+(getTimer()-timer)+" ms");
 		}
 		
-		protected function updateConnectors():void {
-			if (!mouseEnabledWhereTransparent || !hasMouseListeners) {
-				return;
-			}
-			var w:Number = (resizeMode == ResizeMode.SCALE) ? measuredWidth : unscaledWidth;
-			var h:Number = (resizeMode == ResizeMode.SCALE) ? measuredHeight : unscaledHeight;
-			if (isNaN(w) || isNaN(h)) {
-				return;
-			}
-			const offsetH:Number = (getStyle("horizontalPadding") as Number)*.5;
-			const offsetV:Number = (getStyle("verticalPadding") as Number)*.5;
-			const len:int = _visibleItemsData.length;
-			const path:GraphicsPath = new GraphicsPath();
-			const curve:Number = 10;
-			const g:Graphics = _connectorCanvas.graphics;
-			var item:IOrganizationChartItemRenderer;
-			var ownerItem:IOrganizationChartItemRenderer;
-			var skin:IOrganizationChartItemSkin;
-			var ownerSkin:IOrganizationChartItemSkin;
-			var connectorEntry:HierarchicalConnector;
-			var connectorExit:HierarchicalConnector;
-			var ownerConnectorEntry:HierarchicalConnector;
-			var ownerConnectorExit:HierarchicalConnector;
-			var directionFlag:int;
-			var ownerIsVisible:Boolean;
+		protected function resetLayoutForNewItems(newItemsList:Vector.<LayoutData>):void {
+			const nLen:int = newItemsList.length;
+			const oLen:int = _visibleItemsData.length;
+			var layoutData:LayoutData;
+			var compareLayoutData:LayoutData;
 			var i:int;
 			var j:int;
-			var pathLen:int;
-			for (i=0; i<len; i++) {
-				item = _itemRenderers[i];
-				if (!item.disconnected) {
-					if ((item.data as LayoutData).ownerId >= 0) {
-						ownerIsVisible = false;
-						for (j=0; j<len; j++) {
-							ownerItem = _itemRenderers[j];
-							if ((ownerItem.data as LayoutData).id == (item.data as LayoutData).ownerId) {
-								ownerIsVisible = true;
-								break;
-							}
-						}
-						if (ownerIsVisible) {
-							skin = (item as SkinnableComponent).skin as IOrganizationChartItemSkin;
-							ownerSkin = (ownerItem as SkinnableComponent).skin as IOrganizationChartItemSkin;
-							connectorEntry = skin.entryPoint;
-							connectorExit = skin.exitPoint;
-							ownerConnectorEntry = ownerSkin.entryPoint;
-							ownerConnectorExit = ownerSkin.exitPoint;
-							directionFlag = ((item.x+connectorEntry.x) < (ownerItem.x+ownerConnectorExit.x)) ? 0 : ((item.x+connectorEntry.x) > (ownerItem.x+ownerConnectorExit.x)) ? 1 : 2;
-							if (connectorEntry.orientation == ConnectorOrientation.TOP) {
-								if (Math.abs(item.x+connectorEntry.x-ownerItem.x-ownerConnectorExit.x) < curve) {
-									directionFlag = 2;
-								}
-							} else if (connectorEntry.orientation == ConnectorOrientation.LEFT) {
-								if (Math.abs(item.x+connectorEntry.x-ownerItem.x-ownerConnectorExit.x-offsetH) < offsetH) {
-									directionFlag = 2;
-								}
-							} else if (connectorEntry.orientation == ConnectorOrientation.RIGHT) {
-								if (Math.abs(item.x+connectorEntry.x-ownerItem.x-ownerConnectorExit.x+offsetH) < offsetH) {
-									directionFlag = 2;
-								}
-							}
-							path.moveTo((ownerItem.x+ownerConnectorExit.x), (ownerItem.y+ownerConnectorExit.y));
-							switch (ownerConnectorExit.orientation) {
-								case ConnectorOrientation.BOTTOM :
-									if (directionFlag == 0) {
-										path.lineTo((ownerItem.x+ownerConnectorExit.x), (ownerItem.y+ownerItem.height+offsetV-curve));
-										path.curveTo((ownerItem.x+ownerConnectorExit.x), (ownerItem.y+ownerItem.height+offsetV), (ownerItem.x+ownerConnectorExit.x-curve), (ownerItem.y+ownerItem.height+offsetV));
-									} else if (directionFlag == 1) {
-										path.lineTo((ownerItem.x+ownerConnectorExit.x), (ownerItem.y+ownerItem.height+offsetV-curve));
-										path.curveTo((ownerItem.x+ownerConnectorExit.x), (ownerItem.y+ownerItem.height+offsetV), (ownerItem.x+ownerConnectorExit.x+curve), (ownerItem.y+ownerItem.height+offsetV));
-									} else {
-										path.lineTo((ownerItem.x+ownerConnectorExit.x), (ownerItem.y+ownerItem.height+offsetV));
-									}
-									break;
-							}
-							pathLen = path.data.length;
-							switch (connectorEntry.orientation) {
-								case ConnectorOrientation.LEFT :
-									if (directionFlag == 0) {
-										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x-offsetH+curve), (ownerItem.y+ownerItem.height+offsetV));
-										path.curveTo((item.x+connectorEntry.x-offsetH), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x-offsetH), (ownerItem.y+ownerItem.height+offsetV+curve));
-									} else if (directionFlag == 1) {
-										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x-offsetH-curve), (ownerItem.y+ownerItem.height+offsetV));
-										path.curveTo((item.x+connectorEntry.x-offsetH), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x-offsetH), (ownerItem.y+ownerItem.height+offsetV+curve));
-									}
-									path.lineTo((item.x+connectorEntry.x-offsetH), (item.y+connectorEntry.y-curve));
-									path.curveTo((item.x+connectorEntry.x-offsetH), (item.y+connectorEntry.y), (item.x+connectorEntry.x-offsetH+curve), (item.y+connectorEntry.y));
-									path.lineTo((item.x+connectorEntry.x-offsetH+curve), (item.y+connectorEntry.y));
-									path.lineTo((item.x+connectorEntry.x), (item.y+connectorEntry.y));
-									break;
-								case ConnectorOrientation.RIGHT :
-									if (directionFlag == 0) {
-										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x+offsetH+curve), (ownerItem.y+ownerItem.height+offsetV));
-										path.curveTo((item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV+curve));
-									} else if (directionFlag == 1) {
-										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x+offsetH-curve), (ownerItem.y+ownerItem.height+offsetV));
-										path.curveTo((item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x+offsetH), (ownerItem.y+ownerItem.height+offsetV+curve));
-									}
-									path.lineTo((item.x+connectorEntry.x+offsetH), (item.y+connectorEntry.y-curve));
-									path.curveTo((item.x+connectorEntry.x+offsetH), (item.y+connectorEntry.y), (item.x+connectorEntry.x+offsetH-curve), (item.y+connectorEntry.y));
-									path.lineTo((item.x+connectorEntry.x+offsetH-curve), (item.y+connectorEntry.y));
-									path.lineTo((item.x+connectorEntry.x), (item.y+connectorEntry.y));
-									break;
-								case ConnectorOrientation.TOP :
-									if (directionFlag == 0) {
-										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x+curve), (ownerItem.y+ownerItem.height+offsetV));
-										path.curveTo((item.x+connectorEntry.x), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x), (ownerItem.y+ownerItem.height+offsetV+curve));
-										path.lineTo((item.x+connectorEntry.x), (item.y+connectorEntry.y));
-									} else if (directionFlag == 1) {
-										optimizeNextLineTo(path, path.data[int(pathLen-2)], path.data[int(pathLen-1)], (item.x+connectorEntry.x-curve), (ownerItem.y+ownerItem.height+offsetV));
-										path.curveTo((item.x+connectorEntry.x), (ownerItem.y+ownerItem.height+offsetV), (item.x+connectorEntry.x), (ownerItem.y+ownerItem.height+offsetV+curve));
-										path.lineTo((item.x+connectorEntry.x), (item.y+connectorEntry.y));
-									} else {
-										path.lineTo((item.x+connectorEntry.x), (item.y+connectorEntry.y));
-									}
-									break;
-							}
-
-						}
+			for (i=0; i<nLen; i++) {
+				layoutData = newItemsList[i];
+				layoutData.layoutDelta = false;
+				for (j=0; j<oLen; j++) {
+					compareLayoutData = _visibleItemsData[j];
+					if (layoutData.id == compareLayoutData.id) {
+						layoutData.layoutDelta = true;
+						break;
 					}
 				}
 			}
-			g.clear();
-			g.lineStyle(getStyle("connectorLineThickness"), getStyle("connectorLineColor"), getStyle("connectorLineAlpha"), true, LineScaleMode.NONE, CapsStyle.NONE, JointStyle.MITER, 1.414);
-			g.drawPath(path.commands, path.data);
-		}
-		
-		private function optimizeNextLineTo(path:GraphicsPath, dx:Number, dy:Number, tx:Number, ty:Number):void {
-			const dist:Number = Math.abs(tx-dx);
-			const maxVal:int = 10000;
-			if (dist > maxVal) {
-				const cnt:int = int(dist/maxVal);
-				const val:int = (tx > dx) ? maxVal : -maxVal;
-				var i:int;
-				for (i=1; i<cnt; i++) {
-					path.lineTo(dx+val*i, ty);
-				}
-			}
-			path.lineTo(tx, ty);
 		}
 		
 		private function buildItemRenderers():void {
@@ -449,9 +331,15 @@ package cube.spark.components.supportClasses {
 				}
 				if (!itemRenderer) { itemRenderer = new ClassFactory(OrganizationChartItem); }
 			}
+			if (!_dragPane) {
+				_dragPane = new UIComponent();
+				renderDragPane();
+				addChildInternal(_dragPane, 0);
+			}
 			if (!_connectorCanvas) {
 				_connectorCanvas = new UIComponent();
-				addChildInternal(_connectorCanvas);
+				_connectorCanvas.mouseEnabled = _connectorCanvas.mouseChildren = false;
+				addChildInternal(_connectorCanvas, 0);
 			}
 			if (!_itemRenderers) {
 				_itemRenderers = new Vector.<IOrganizationChartItemRenderer>();
@@ -470,7 +358,7 @@ package cube.spark.components.supportClasses {
 						item.visible = false;
 						item.includeInLayout = false;
 						item.data = {index:i, state:0};
-						addChildInternal(item as DisplayObject);
+						addChildInternal(item as DisplayObject, 2);
 						dispatchEvent(new RendererExistenceEvent(RendererExistenceEvent.RENDERER_ADD, false, false, item, i, {state:0}));
 						_itemRenderers.push(item);
 					}
@@ -496,6 +384,10 @@ package cube.spark.components.supportClasses {
 				item.removeEventListener("disconnectedChange", itemRenderer_disconnectedChangeHandler);
 				item.removeEventListener("collapsedChange", itemRenderer_collapsedChangeHandler);
 				layoutData = _visibleItemsData[i];
+				if (item.data != layoutData) {
+					item.x = layoutData.x;
+					item.y = layoutData.y;
+				}
 				dw = getStyle((layoutData.state == 0) ? "itemMinimizedWidth" : (layoutData.state == 1) ? "itemNormalWidth" : "itemMaximizedWidth");
 				dh = getStyle((layoutData.state == 0) ? "itemMinimizedHeight" : (layoutData.state == 1) ? "itemNormalHeight" : "itemMaximizedHeight");
 				item.width = dw;
@@ -506,51 +398,106 @@ package cube.spark.components.supportClasses {
 				item.hasChildren = layoutData.hasChildren;
 				item.setStyle("skinClass", (layoutData.itemRendererSkin) ? layoutData.itemRendererSkin : getStyle("itemRendererSkin"));
 				item.visible = true;
-				if (_animationFlag) {
-					item.animateTo(layoutData.initialX, layoutData.initialY, layoutData.x, layoutData.y);
-					layoutData.initialX = layoutData.initialY = Number.NaN;
-				} else {
-					item.x = layoutData.x;
-					item.y = layoutData.y;
-				}
+				handleLayoutUpdate(item, layoutData);
+				layoutData.layoutDelta = true;
 				// re-initiate binds
-				item.addEventListener("disconnectedChange", itemRenderer_disconnectedChangeHandler, false, 0, true);
-				item.addEventListener("collapsedChange", itemRenderer_collapsedChangeHandler, false, 0, true);
+				item.addEventListener(OrganizationChartEvent.DISCONNECTED_CHANGE, itemRenderer_disconnectedChangeHandler, false, 0, true);
+				item.addEventListener(OrganizationChartEvent.COLLAPSED_CHANGE, itemRenderer_collapsedChangeHandler, false, 0, true);
 			}
 			for (i=len; i<tLen; i++) {
 				item = _itemRenderers[i];
-				item.visible = false;
+				//layoutData.layoutDelta = false;
+				handleLayoutUpdate(item);
+				//item.visible = false;
 			}
 			_animationFlag = false;
+			_ignoreLayoutDelta = false;
 			dispatchEvent(new PropertyChangeEvent(PropertyChangeEvent.PROPERTY_CHANGE, false, false, PropertyChangeEventKind.UPDATE, "contentWidth", contentWidth, _hierarchicalLayout.measuredWidth, this));
 			dispatchEvent(new PropertyChangeEvent(PropertyChangeEvent.PROPERTY_CHANGE, false, false, PropertyChangeEventKind.UPDATE, "contentHeight", contentHeight, _hierarchicalLayout.measuredHeight, this));
 			// re-initiate binds
 			_dataProvider.addEventListener(CollectionEvent.COLLECTION_CHANGE, dataProvider_collectionChangeHandler, false, 0, true);
 		}
 		
+		private function handleLayoutUpdate(item:IOrganizationChartItemRenderer, layoutData:LayoutData=null):void {
+			const isAppearEffect:Boolean = !_ignoreLayoutDelta;
+			const animator:HierarchicalItemAnimator = item.animator ? item.animator : new HierarchicalItemAnimator();
+			if (layoutData) {
+				if (_animationFlag && (!layoutData.layoutDelta || _ignoreLayoutDelta)) {
+					animator.addMotion(
+						item, 
+						{
+							x: layoutData.layoutDelta ? item.x : (_centerPos ? _centerPos.x : mouseX),
+							y: layoutData.layoutDelta ? item.y : (_centerPos ? _centerPos.y : mouseY),
+							alpha: layoutData.layoutDelta ? 1 : 0
+						}, 
+						{
+							x: layoutData.x,
+							y: layoutData.y,
+							alpha: 1
+						},
+						isAppearEffect
+					);
+				} else {
+					item.x = layoutData.x;
+					item.y = layoutData.y;
+					item.alpha = 1;
+				}
+				animator.endHandler = null;
+			} else if (_animationFlag) {
+				animator.addMotion(
+					item, 
+					{
+						x: item.x,
+						y: item.y,
+						alpha: 1
+					}, 
+					{
+						x: item.x,
+						y: item.y,
+						alpha: 0
+					},
+					true, true
+				);
+				animator.endHandler = 
+					function():void {
+						item.visible = false;
+					};
+			} else {
+				if (item.animator) {
+					item.animator.stopAnimations();
+				}
+				item.visible = false;
+			}
+			item.animator = animator;
+		}
+		
 		private function applyFocus():void {
 			if ((_autoFocusTarget >= 0) && (getStyle("autoFocusItems") == true)) {
-				const centerPos:Point = _hierarchicalLayout.getAbsoluteCenter(_autoFocusTarget);
-				if (_currentFocusAnimation && (_currentFocusAnimation.isPlaying)) {
-					_currentFocusAnimation.removeEventListener(EffectEvent.EFFECT_END, animation_effectEndHandler);
-					_currentFocusAnimation.stop();
-					invalidateLayout(LayoutUpdateType.POSITIONAL);
+				_centerPos = _hierarchicalLayout.getAbsoluteCenter(_autoFocusTarget);
+				if ((_centerPos.x < 0) && (_centerPos.y < 0)) {
+					_autoFocusTargetOnUpdate = _autoFocusTarget;
+				} else {
+					if (_currentFocusAnimation && (_currentFocusAnimation.isPlaying)) {
+						_currentFocusAnimation.removeEventListener(EffectEvent.EFFECT_END, animation_effectEndHandler);
+						_currentFocusAnimation.end();
+						//invalidateLayout(LayoutUpdateType.POSITIONAL);
+					}
+					_currentFocusAnimation = new Animate(this);
+					const hPos:Number = Math.min((_centerPos.x-width/2), (_hierarchicalLayout.measuredWidth-width));
+					const vPos:Number = Math.min((_centerPos.y-height/2), (_hierarchicalLayout.measuredHeight-height));
+					const xPath:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition", horizontalScrollPosition, hPos, 1);
+					const yPath:SimpleMotionPath = new SimpleMotionPath("verticalScrollPosition", verticalScrollPosition, vPos, 1);
+					const motionPaths:Vector.<MotionPath> = new Vector.<MotionPath>(2, true);
+					motionPaths[0] = xPath;
+					motionPaths[1] = yPath;
+					_currentFocusAnimation.addEventListener(EffectEvent.EFFECT_END, animation_effectEndHandler, false, 0, true);
+					_currentFocusAnimation.motionPaths = motionPaths;
+					_currentFocusAnimation.duration = 300;
+					_currentFocusAnimation.easer = new Sine();
+					_currentFocusAnimation.triggerEvent = null;
+					_currentFocusAnimation.startDelay = 50;
+					_currentFocusAnimation.play();
 				}
-				_currentFocusAnimation = new Animate(this);
-				const hPos:Number = Math.min((centerPos.x-width/2), (_hierarchicalLayout.measuredWidth-width));
-				const vPos:Number = Math.min((centerPos.y-height/2), (_hierarchicalLayout.measuredHeight-height));
-				const xPath:SimpleMotionPath = new SimpleMotionPath("horizontalScrollPosition", horizontalScrollPosition, hPos, 1);
-				const yPath:SimpleMotionPath = new SimpleMotionPath("verticalScrollPosition", verticalScrollPosition, vPos, 1);
-				const motionPaths:Vector.<MotionPath> = new Vector.<MotionPath>(2, true);
-				motionPaths[0] = xPath;
-				motionPaths[1] = yPath;
-				_currentFocusAnimation.addEventListener(EffectEvent.EFFECT_END, animation_effectEndHandler, false, 0, true);
-				_currentFocusAnimation.motionPaths = motionPaths;
-				_currentFocusAnimation.duration = 300;
-				_currentFocusAnimation.easer = new Sine();
-				_currentFocusAnimation.triggerEvent = null;
-				_currentFocusAnimation.startDelay = 50;
-				_currentFocusAnimation.play();
 			}
 			_autoFocusTarget = -1;
 		}
@@ -579,15 +526,30 @@ package cube.spark.components.supportClasses {
 			return true;
 		}
 		
-		public function triggerAnimationFlag():void {
+		private function renderDragPane():void {
+			if (_dragPane) {
+				if (_dragPane && (_dragPane.width != width) && (_dragPane.height != height)) {
+					const g:Graphics = _dragPane.graphics;
+					g.clear();
+					g.beginFill(0x000000, 0);
+					g.drawRect(0, 0, width, height);
+					g.endFill();
+				}
+				_dragPane.x = horizontalScrollPosition;
+				_dragPane.y = verticalScrollPosition;
+			}
+		}
+		
+		public function triggerAnimationFlag(invalidateLayoutDeltas:Boolean=false):void {
 			_animationFlag = true;
 			_hierarchicalLayout.takeSnapshot();
+			_ignoreLayoutDelta = invalidateLayoutDeltas;
 		}
 		
 		/**
 		 *  @private
 		 */
-		private function addChildInternal(child:DisplayObject):DisplayObject {
+		private function addChildInternal(child:DisplayObject, index:int=0):DisplayObject {
 			var formerParent:DisplayObjectContainer = child.parent;
 			if (formerParent && !(formerParent is Loader)) {
 				formerParent.removeChild(child);
@@ -596,7 +558,7 @@ package cube.spark.components.supportClasses {
 				Math.max(0, super.numChildren - 1) :
 				super.numChildren;
 			addingChild(child);
-			$addChildAt(child, 0);
+			$addChildAt(child, index);
 			childAdded(child);
 			return child;
 		}
@@ -615,10 +577,12 @@ package cube.spark.components.supportClasses {
 			const animation:Animate = event.currentTarget as Animate;
 			animation.removeEventListener(EffectEvent.EFFECT_END, animation_effectEndHandler);
 			invalidateLayout(LayoutUpdateType.POSITIONAL);
+			_centerPos = null;
 		}
 		
 		private function hierarchicalDataGroup_resizeHandler(event:ResizeEvent):void {
 			if ((width > 0) && (height > 0)) {
+				renderDragPane();
 				invalidateLayout(LayoutUpdateType.POSITIONAL);
 			}
 		}
@@ -646,23 +610,27 @@ package cube.spark.components.supportClasses {
 					break;
 			}
 			_autoFocusTarget = item.data.id;
+			triggerAnimationFlag(true);
 		}
 		
 		private function itemRenderer_disconnectedChangeHandler(event:Event):void {
+			const item:IOrganizationChartItemRenderer = event.currentTarget as IOrganizationChartItemRenderer;
 			invalidateConnectors();
+			dispatchEvent(new OrganizationChartEvent(OrganizationChartEvent.DISCONNECTED_CHANGE, (item.data as LayoutData).listIndex, item));
 		}
 		
 		private function itemRenderer_collapsedChangeHandler(event:Event):void {
 			const item:IOrganizationChartItemRenderer = event.currentTarget as IOrganizationChartItemRenderer;
-			_hierarchicalLayout.writeBytes(item.data, (item.data as LayoutData).listIndex);
+			_hierarchicalLayout.writeBytes((item.data as LayoutData), (item.data as LayoutData).listIndex);
 			_autoFocusTarget = (item.data as LayoutData).id;
-			triggerAnimationFlag();
+			triggerAnimationFlag(true);
 			invalidateLayout(LayoutUpdateType.STATUS);
+			dispatchEvent(new OrganizationChartEvent(OrganizationChartEvent.COLLAPSED_CHANGE, (item.data as LayoutData).listIndex, item));
 		}
 		
 		private function dataGroup_enterFrameHandler(event:Event):void {
 			removeEventListener(Event.ENTER_FRAME, dataGroup_enterFrameHandler);
-			updateConnectors();
+			HierarchicalConnectorRenderer.updateConnectors(this);
 		}
 		
 		private function dataGroup_invalidateHandler(event:Event):void {
@@ -674,7 +642,9 @@ package cube.spark.components.supportClasses {
 			var layoutUpdateType:int = LayoutUpdateType.FULL;
 			switch (event.kind) {
 				case CollectionEventKind.ADD :
-					injectDefaultProperties(_dataProvider);
+					if ((_autoFocusTarget == -1) && event.items && (event.items.length > 0)) {
+						_autoFocusTarget = (event.items[0] as LayoutData).id;
+					}
 					triggerAnimationFlag();
 					break;
 				case CollectionEventKind.MOVE :
@@ -684,14 +654,14 @@ package cube.spark.components.supportClasses {
 				case CollectionEventKind.REMOVE :
 					break;
 				case CollectionEventKind.REPLACE :
-					_hierarchicalLayout.writeBytes(_dataProvider.getItemAt(event.location), event.location);
+					_hierarchicalLayout.writeBytes((_dataProvider.getItemAt(event.location) as LayoutData), event.location);
 					break;
 				case CollectionEventKind.RESET :
 					break;
 				case CollectionEventKind.UPDATE :
 					const len:int = event.items.length;
 					var propertyEvent:PropertyChangeEvent;
-					var listItem:Object;
+					var listItem:LayoutData;
 					var i:int;
 					layoutUpdateType = LayoutUpdateType.STATUS;
 					for (i=0; i<len; i++) {
@@ -700,10 +670,14 @@ package cube.spark.components.supportClasses {
 							propertyEvent.property == "ownerId") {
 							layoutUpdateType = LayoutUpdateType.FULL;
 						}
-						listItem = propertyEvent.source;
+						listItem = propertyEvent.source as LayoutData;
 						_hierarchicalLayout.writeBytes(listItem, _dataProvider.getItemIndex(listItem));
 					}
 					break;
+			}
+			if (_autoFocusTargetOnUpdate >= 0) {
+				_autoFocusTarget = _autoFocusTargetOnUpdate;
+				_autoFocusTargetOnUpdate = -1;
 			}
 			if ((layoutUpdateType == LayoutUpdateType.FULL) && (_dataProvider is ArrayCollection)) {
 				(_dataProvider as ArrayCollection).source.sort(dataProvider_sortFunction);
@@ -727,14 +701,13 @@ package cube.spark.components.supportClasses {
 			return 0;
 		}
 		
-		private function onCreationComplete(event:FlexEvent):void {
+		private function self_creationCompleteHandler(event:FlexEvent):void {
 			_hierarchicalLayout = new HierarchicalLayout();
 			if (_doLaterSetHierarchicalLayout) {
-				injectDefaultProperties(_dataProvider);
 				_hierarchicalLayout.list = _dataProvider;
 				invalidateLayout(LayoutUpdateType.FULL);
 			}
-			removeEventListener(FlexEvent.CREATION_COMPLETE, onCreationComplete);
+			removeEventListener(FlexEvent.CREATION_COMPLETE, self_creationCompleteHandler);
 			addEventListener(ResizeEvent.RESIZE, hierarchicalDataGroup_resizeHandler, false, 0, true);
 		}
 	}

@@ -100,7 +100,7 @@ package cube.spark.components {
 		
 		public function zoom():void {
 			return;
-			if (_zoomEffect && (width*height <= 640*480)) {
+			/*if (_zoomEffect && (width*height <= 640*480)) {
 				_zoomEffect.addEventListener(EffectEvent.EFFECT_UPDATE, zoomEffect_effectUpdateHandler, false, 0, true);
 				_zoomEffect.addEventListener(EffectEvent.EFFECT_END, zoomEffect_effectEndHandler, false, 0, true);
 				_zoomEffect.start(
@@ -114,7 +114,7 @@ package cube.spark.components {
 					},
 					200
 				);
-			}
+			}*/
 		}
 		
 		public function focus(target:*):void {
@@ -151,9 +151,9 @@ package cube.spark.components {
 				dataGroup.setStyle("connectorLineColor", getStyle("connectorLineColor"));
 				dataGroup.scaleX = _scaleX;
 				dataGroup.scaleY = _scaleY;
-				_zoomEffect = new PixelBenderEffect();
-				_zoomEffect.target = dataGroup;
-				_zoomEffect.shader = new (getStyle("zoomFilter"))();
+				//_zoomEffect = new PixelBenderEffect();
+				//_zoomEffect.target = dataGroup;
+				//_zoomEffect.shader = new (getStyle("zoomFilter"))();
 				dispatchEvent(new OrganizationChartEvent(OrganizationChartEvent.DATA_GROUP_READY, 0, null));
 			} else if (instance == scroller) {
 				scroller.horizontalScrollBar.addEventListener(Event.CHANGE, scroller_changeHandler, false, 0, true);
@@ -202,10 +202,10 @@ package cube.spark.components {
 			scaleY -= .02;
 		}
 		
-		private function zoomEffect_effectEndHandler(event:EffectEvent):void {
+		/*private function zoomEffect_effectEndHandler(event:EffectEvent):void {
 			_zoomEffect.removeEventListener(EffectEvent.EFFECT_UPDATE, zoomEffect_effectUpdateHandler);
 			_zoomEffect.removeEventListener(EffectEvent.EFFECT_END, zoomEffect_effectEndHandler);
-		}
+		}*/
 
 		private function self_enterFrameHandler(event:Event):void {
 			removeEventListener(Event.ENTER_FRAME, self_enterFrameHandler);

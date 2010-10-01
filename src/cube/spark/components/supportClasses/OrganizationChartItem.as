@@ -2,29 +2,22 @@ package cube.spark.components.supportClasses {
 	
 	import cube.skins.spark.OrganizationChartItemSkin;
 	import cube.skins.spark.SkinFactory;
+	import cube.spark.effects.DockAnimation;
 	import cube.spark.events.ConnectorEvent;
+	import cube.spark.events.OrganizationChartEvent;
 	import cube.spark.layouts.supportClasses.LayoutData;
 	
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	
-	import mx.core.UIComponentCachePolicy;
-	import mx.effects.IEffectInstance;
-	import mx.events.EffectEvent;
-	import mx.events.StateChangeEvent;
-	import mx.managers.IFocusManager;
+	import mx.core.UIComponent;
 	import mx.styles.CSSSelector;
 	import mx.styles.CSSStyleDeclaration;
-	import mx.styles.StyleManager;
 	
 	import spark.components.Button;
-	import spark.components.IItemRenderer;
-	import spark.components.IItemRendererOwner;
 	import spark.components.supportClasses.SkinnableComponent;
-	import spark.effects.Animate;
-	import spark.effects.Move;
-	import spark.effects.easing.Elastic;
-	import spark.effects.easing.Sine;
+	import spark.effects.animation.MotionPath;
+	import spark.filters.BlurFilter;
 	
 	[SkinState("minimizedUp")]
 	[SkinState("normalUp")]
@@ -41,27 +34,36 @@ package cube.spark.components.supportClasses {
 	
 	[Style(name="cornerRadius", type="Number", inherit="no")]
 	
+	[Event(name="rendererSkinReady", type="cube.spark.events.OrganizationChartEvent")]
+	
 	public class OrganizationChartItem extends SkinnableComponent implements IOrganizationChartItemRenderer {
 		
 		include "../../core/Version.as";
 		
-		private const defaultStylesSet:Boolean = setupDefaultInheritingStyles();
+		protected const defaultStylesSet:Boolean = setupDefaultInheritingStyles();
 		
-		private var _data:Object;
-		private var _itemIndex:int;
-		private var _isMouseOver:Boolean = false;
-		private var _disconnected:Boolean = false;
-		private var _collapsed:Boolean = false;
-		private var _hasChildren:Boolean = false;
-		private var _currentAnimation:Move;
-		private var _skinFactory:SkinFactory;
+		protected var _data:Object;
+		protected var _itemIndex:int;
+		protected var _isMouseOver:Boolean = false;
+		protected var _disconnected:Boolean = false;
+		protected var _collapsed:Boolean = false;
+		protected var _hasChildren:Boolean = false;
+		protected var _skinReady:Boolean = false;
+		protected var _doLaterAnimateTo:Object;
+		protected var _currentAnimation:DockAnimation;
+		protected var _skinFactory:SkinFactory;
+		protected var _blurFilter:BlurFilter;
+		protected var _animator:HierarchicalItemAnimator;
+		protected var _motionPaths:Vector.<MotionPath>;
 		
 		[SkinPart(required="false")]
 		public var openButton:Button;
-		
+
 		public function OrganizationChartItem():void {
+			addEventListener(MouseEvent.MOUSE_DOWN, item_mouseHandler, false, 0, true);
 			addEventListener(MouseEvent.MOUSE_OVER, item_mouseHandler, false, 0, true);
 			addEventListener(MouseEvent.MOUSE_OUT, item_mouseHandler, false, 0, true);
+			addEventListener(MouseEvent.CLICK, item_mouseHandler, false, 0, true);
 			super();
 			
 		}
@@ -77,10 +79,10 @@ package cube.spark.components.supportClasses {
 				oldState = _data.state;
 			}
 			_data = value;
-			//if (_data.state != oldState) {
-				invalidateSkinState();
-			//}
-			stopAnimations();
+			invalidateSkinState();
+			if (_animator) {
+				_animator.stopAnimations();
+			}
 			dispatchEvent(new Event("dataChange"));
 		}
 		
@@ -132,10 +134,11 @@ package cube.spark.components.supportClasses {
 		[Bindable("dataChange")]
 		public function get label():String {
 			if (data is LayoutData) {
-				return (data as LayoutData).firstName+" "+(data as LayoutData).lastName;
+				return "Id: "+(data as LayoutData).id.toString()+", ownerId: "+(data as LayoutData).ownerId.toString();
 			}
 			return new String();
 		}
+		
 		public function set label(value:String):void {
 			// void
 		}
@@ -160,31 +163,24 @@ package cube.spark.components.supportClasses {
 			return _skinFactory.activeGenerator;
 		}
 		
-		public function animateTo(xFrom:Number, yFrom:Number, xTo:Number, yTo:Number):void {
-			stopAnimations();
-			if (isNaN(xFrom) || isNaN(yFrom) || ((xFrom == xTo) && (yFrom == yTo))) {
-				x = xTo;
-				y = yTo;
-				move_updateHandler(null);
-			} else {
-				_currentAnimation = new Move(this);
-				_currentAnimation.addEventListener(EffectEvent.EFFECT_UPDATE, move_updateHandler, false, 0, true);
-				_currentAnimation.duration = 500;
-				_currentAnimation.easer = new Sine();
-				_currentAnimation.xFrom = xFrom;
-				_currentAnimation.xTo = xTo;
-				_currentAnimation.yFrom = yFrom;
-				_currentAnimation.yTo = yTo;
-				_currentAnimation.triggerEvent = null;
-				_currentAnimation.play();
-			}
+		public function get skinReady():Boolean {
+			return _skinReady;
 		}
 		
-		protected function stopAnimations():void {
-			if (_currentAnimation && _currentAnimation.isPlaying) {
-				_currentAnimation.removeEventListener(EffectEvent.EFFECT_UPDATE, move_updateHandler);
-				_currentAnimation.stop();
-			}
+		public function get animator():HierarchicalItemAnimator {
+			return _animator;
+		}
+		
+		public function set animator(value:HierarchicalItemAnimator):void {
+			_animator = value;
+		}
+		
+		public function get motionPaths():Vector.<MotionPath> {
+			return _motionPaths;
+		}
+		
+		public function set motionPaths(value:Vector.<MotionPath>):void {
+			_motionPaths = value;
 		}
 		
 		override protected function getCurrentSkinState():String {
@@ -211,6 +207,7 @@ package cube.spark.components.supportClasses {
 		
 		override public function setStyle(styleProp:String, newValue:*):void {
 			if (styleProp == "skinClass") {
+				_skinReady = false;
 				if (!_skinFactory) {
 					_skinFactory = new SkinFactory();
 					super.setStyle("skinFactory", _skinFactory);
@@ -219,6 +216,7 @@ package cube.spark.components.supportClasses {
 					styleChanged("skinFactory");
 					dispatchEvent(new Event("dataChange"));
 				}
+				skin.addEventListener(Event.FRAME_CONSTRUCTED, skin_updateComplete, false, 0, true);
 				return;
 			}
 			super.setStyle(styleProp, newValue);
@@ -268,19 +266,27 @@ package cube.spark.components.supportClasses {
 		}
 		
 		protected function openButton_clickHandler(event:MouseEvent):void {
-			//event.stopPropagation();
-			//event.stopImmediatePropagation();
 			collapsed = !collapsed;
-		}
-		
-		protected function move_updateHandler(event:EffectEvent):void {
-			(skin as IOrganizationChartItemSkin).entryPoint.dispatchEvent(new ConnectorEvent(ConnectorEvent.CONNECTOR_LAYOUT_CHANGE));
-			(skin as IOrganizationChartItemSkin).exitPoint.dispatchEvent(new ConnectorEvent(ConnectorEvent.CONNECTOR_LAYOUT_CHANGE));
 		}
 		
 		protected function item_mouseHandler(event:MouseEvent):void {
 			_isMouseOver = (event.type == MouseEvent.MOUSE_OVER);
 			invalidateSkinState();
+			if (event.type == MouseEvent.MOUSE_DOWN) {
+				event.stopImmediatePropagation();
+				event.stopPropagation();
+			}
+		}
+		
+		protected function skin_updateComplete(event:Event):void {
+			const dispatchingSkin:UIComponent = event.currentTarget as UIComponent;
+			_skinReady = true;
+			dispatchingSkin.removeEventListener(Event.FRAME_CONSTRUCTED, skin_updateComplete);
+			dispatchEvent(new OrganizationChartEvent(
+				OrganizationChartEvent.RENDERER_SKIN_READY,
+				(data as LayoutData).listIndex,
+				this
+			));
 		}
 
 	}

@@ -17,12 +17,10 @@ typedef struct {
 const int _INTSIZE = sizeof(int);
 const int _FLOATSIZE = sizeof(float);
 const int _BOOLEANSIZE = sizeof(boolean);
-processedNode **_processedNodes = NULL;
 int _data_len, _originator;
 double _horizontalPadding, _verticalPadding;
 boolean _initialized = FALSE;
 boolean _hasOriginator = FALSE;
-boolean _hasProcessedNodes = FALSE;
 
 int* _data_id;
 int* _data_ownerId;
@@ -55,23 +53,10 @@ static inline int findOriginator() {
 	return -1;
 }
 
-static inline void reset(int type) {
-	int i, maxId;
-	if (type == 2) { _hasProcessedNodes = FALSE; }
-	maxId = 0;
+static inline void reset() {
+	int i;
 	if (_initialized) {
-		if (type == 2) {
-			for (i=0; i<_data_len; i++) {
-				maxId = (_data_id[i] > maxId) ? _data_id[i] : maxId;
-			}
-			free(_data_memPos_id);
-			_data_memPos_id = calloc(maxId, _INTSIZE);
-		}
 		for (i=0; i<_data_len; i++) {
-			if (!_hasProcessedNodes) {
-				free(_processedNodes[i]);
-				_processedNodes[i] = (processedNode *)malloc(sizeof(processedNode));
-			}
 			_data_hasChildren[i] = 0;
 			_data_visible[i] = 0;
 			_data_xPos[i] = 0;
@@ -83,9 +68,9 @@ static inline void reset(int type) {
 
 AS3_Val flushBuffers(void* self, AS3_Val args) {
 	if (_initialized) {
-		fprintf(stderr, "***DEBUG*** Flushed");
 		free(_data_id);
 		free(_data_ownerId);
+		free(_data_memPos_id);
 		free(_data_minimizedWidth);
 		free(_data_minimizedHeight);
 		free(_data_normalWidth);
@@ -103,6 +88,7 @@ AS3_Val flushBuffers(void* self, AS3_Val args) {
 		free(_data_visible);
 		free(_data_hasChildren);
 		_hasOriginator = _initialized = FALSE;
+		fprintf(stderr, "***DEBUG*** Flushed");
 	}
 	return AS3_Int(0);
 }
@@ -111,9 +97,9 @@ AS3_Val initializeBuffers(void* self, AS3_Val args) {
 	AS3_Val retVal;
 	if (!_initialized) {
 		AS3_ArrayValue(args, "IntType", &_data_len);
-		fprintf(stderr, "***DEBUG*** Creating memory for %d items", _data_len);
 		_data_id = calloc(_data_len, _INTSIZE);
 		_data_ownerId = calloc(_data_len, _INTSIZE);
+		_data_memPos_id = calloc(_data_len, _INTSIZE);
 		_data_minimizedWidth = calloc(_data_len, _FLOATSIZE);
 		_data_minimizedHeight = calloc(_data_len, _FLOATSIZE);
 		_data_normalWidth = calloc(_data_len, _FLOATSIZE);
@@ -130,10 +116,10 @@ AS3_Val initializeBuffers(void* self, AS3_Val args) {
 		_data_visibleItems = calloc(_data_len, _INTSIZE);
 		_data_ownerVisibleItems = calloc(_data_len, _INTSIZE);
 		_data_visible = calloc(_data_len, _INTSIZE);
-		_processedNodes = (processedNode **)realloc(_processedNodes, _data_len * sizeof(processedNode *));
 		retVal = AS3_Int(_data_len*7*_INTSIZE+_data_len*10*_FLOATSIZE);
-		reset(2);
 		_initialized = TRUE;
+		reset();
+		fprintf(stderr, "***DEBUG*** Creating memory for %d items", _data_len);
 	} else {
 		retVal = AS3_Int(0);
 	}
@@ -209,10 +195,17 @@ static inline int getMemPos(int id) {
 }
 
 static inline float getItemSize(int memPos, boolean widthOrHeight) {
-	if (_data_state[memPos] == 0) { return widthOrHeight ? _data_minimizedWidth[memPos] : _data_minimizedHeight[memPos]; }
-	else if (_data_state[memPos] == 1) { return widthOrHeight ? _data_normalWidth[memPos] : _data_normalHeight[memPos]; }
-	else if (_data_state[memPos] == 2) { return widthOrHeight ? _data_maximizedWidth[memPos] : _data_maximizedHeight[memPos]; }
-	return 0;
+	float returnValue = 0;
+	if (_data_state[memPos] == 0) {
+		returnValue = (widthOrHeight ? _data_minimizedWidth[memPos] : _data_minimizedHeight[memPos]);
+	}
+	else if (_data_state[memPos] == 1) {
+		return returnValue = (widthOrHeight ? _data_normalWidth[memPos] : _data_normalHeight[memPos]);
+	}
+	else if (_data_state[memPos] == 2) {
+		return returnValue = (widthOrHeight ? _data_maximizedWidth[memPos] : _data_maximizedHeight[memPos]);
+	}
+	return returnValue;
 }
 
 static inline float2 map(int *memPos) {
@@ -230,38 +223,21 @@ static inline float2 map(int *memPos) {
 	childIndex = 0;
 	_data_visible[*memPos] = 1;
 	if (_data_collapsed[*memPos] == 0) {
-		if (_hasProcessedNodes) {
-			childIndex = _processedNodes[*memPos]->childLen;
-			for (i=0; i<childIndex; i++) {
-				childMemPos = _processedNodes[*memPos]->children[i];
-				mapVal = map(&childMemPos);
-				_data_measuredWidth[childMemPos] = mapVal.xVal;
-				_data_measuredHeight[childMemPos] = mapVal.yVal;
+		originatorId = _data_id[*memPos];
+		startPos = *memPos+1;
+		childIndex = 0;
+		for (i=startPos; i<_data_len; i++) {
+			if (_data_ownerId[i] == originatorId) {
+				children[childIndex++] = i;
+				mapVal = map(&i);
+				_data_measuredWidth[i] = mapVal.xVal;
+				_data_measuredHeight[i] = mapVal.yVal;
 				childrenMaxWidth += mapVal.xVal;
 				if (mapVal.yVal > childrenMaxHeight) {
 					childrenMaxHeight = mapVal.yVal;
 				}
 				hasChildren = TRUE;
-			}
-		} else {
-			originatorId = _data_id[*memPos];
-			startPos = *memPos+1;
-			childIndex = 0;
-			for (i=startPos; i<_data_len; i++) {
-				if (_data_ownerId[i] == originatorId) {
-					children[childIndex++] = i;
-					mapVal = map(&i);
-					_data_measuredWidth[i] = mapVal.xVal;
-					_data_measuredHeight[i] = mapVal.yVal;
-					childrenMaxWidth += mapVal.xVal;
-					if (mapVal.yVal > childrenMaxHeight) {
-						childrenMaxHeight = mapVal.yVal;
-					}
-					hasChildren = TRUE;
-				} else if (hasChildren) { break; }
-			}
-			_processedNodes[*memPos]->childLen = childIndex;
-			_processedNodes[*memPos]->children = children;
+			} else if (hasChildren) { break; }
 		}
 		if (hasChildren) {
 			childrenMaxWidth += _horizontalPadding*(childIndex-1);
@@ -289,7 +265,7 @@ static inline float2 map(int *memPos) {
 		returnVal.xVal = dw;
 		returnVal.yVal = dh;
 	}
-	_data_hasChildren[*memPos] = (_processedNodes[*memPos]->childLen > 0) ? 1 : 0;
+	_data_hasChildren[*memPos] = (childIndex > 0) ? 1 : 0;
 	return returnVal;
 }
 
@@ -298,8 +274,8 @@ static inline float normalize(float dx) {
 	float maxHeight = 0;
 	float itemHeight;
 	for (i=0; i<_data_len; i++) {
-		owner = _data_memPos_id[_data_ownerId[i]];
-		if (owner >= 0) {
+		if (_data_ownerId[i] >= 0) {
+			owner = _data_memPos_id[_data_ownerId[i]];
 			_data_xPos[i] += _data_xPos[owner];
 			_data_yPos[i] += _data_yPos[owner];
 		}
@@ -356,19 +332,26 @@ AS3_Val calculate(void* self, AS3_Val args) {
 		_hasOriginator = TRUE;
 	}
 	if (updateType > 0) {
-		reset(2);
+		reset();
 		totalSize = map(&_originator);
 		totalHeight = normalize(totalSize.xVal*.5-getItemSize(_originator, TRUE)*.5);
 		//totalHeight += getItemSize(_originator, FALSE);
 	}
-	_hasProcessedNodes = TRUE;
 	for (i=0; i<_data_len; i++) {
 		if (_data_visible[i]) {
-			ownerMemPos = _data_memPos_id[_data_ownerId[i]];
+			if (_data_ownerId[i] >= 0) {
+				ownerMemPos = _data_memPos_id[_data_ownerId[i]];
+			} else {
+				ownerMemPos = _originator;
+			}
 			if (isWithinVisibleArea(ownerMemPos, entryPointX, entryPointY, entryPointWidth, entryPointHeight)) {
 				_data_visibleItems[j] = i;
 				_data_ownerVisibleItems[j] = ownerMemPos;
-				ownerMemPos = _data_memPos_id[_data_ownerId[ownerMemPos]];
+				if (_data_ownerId[ownerMemPos] >= 0) {
+					ownerMemPos = _data_memPos_id[_data_ownerId[ownerMemPos]];
+				} else {
+					ownerMemPos = _originator;
+				}
 				j++;
 				if (!isWithinVisibleArea(ownerMemPos, entryPointX, entryPointY, entryPointWidth, entryPointHeight)) {
 					k = 0;

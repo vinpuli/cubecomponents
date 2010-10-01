@@ -2,24 +2,27 @@ package cube.spark.components {
 	
 	import cube.skins.spark.OrganizationChartSkin;
 	import cube.spark.components.supportClasses.HierarchicalDataGroup;
+	import cube.spark.components.supportClasses.ScrollDragHandler;
+	import cube.spark.effects.PixelBenderEffect;
 	import cube.spark.events.OrganizationChartEvent;
+	import cube.spark.events.ScrollDragHandlerEvent;
 	import cube.spark.layouts.supportClasses.LayoutUpdateType;
 	
 	import flash.events.Event;
 	
 	import mx.collections.ArrayCollection;
 	import mx.collections.IList;
-	import mx.events.FlexEvent;
-	import mx.events.ResizeEvent;
+	import mx.events.EffectEvent;
 	import mx.styles.CSSSelector;
 	import mx.styles.CSSStyleDeclaration;
-	import mx.styles.StyleManager;
 	
 	import spark.components.Scroller;
 	import spark.components.SkinnableContainer;
 	
 	[Event(name="dataGroupReady", type="cube.spark.events.OrganizationChartEvent")]
 	
+	[Style(name="borderAlpha", type="Number", inherit="no")]
+	[Style(name="borderColor", type="Number", inherit="no")]
 	[Style(name="dataGroupStyleName", type="String", inherit="no")]
 	[Style(name="autoFocusItems", type="Boolean", inherit="no")]
 	[Style(name="connectorLineColor", type="uint", format="Color", inherit="no")]
@@ -41,12 +44,16 @@ package cube.spark.components {
 		private var _invalidationTimeout:Boolean = false;
 		private var _scaleX:Number = 1;
 		private var _scaleY:Number = 1;
+		private var _zoomEffect:PixelBenderEffect;
 		
 		[SkinPart(required="true")]
 		public var dataGroup:HierarchicalDataGroup;
 		
 		[SkinPart(required="false")]
 		public var scroller:Scroller;
+		
+		[SkinPart(required="false")]
+		public var scrollDragHandler:ScrollDragHandler;
 		
 		[Bindable]
 		public function get dataProvider():IList {
@@ -69,6 +76,10 @@ package cube.spark.components {
 			super();
 		}
 		
+		override public function get scaleX():Number {
+			return _scaleX;
+		}
+		
 		override public function set scaleX(value:Number):void {
 			_scaleX = value;
 			if (dataGroup) {
@@ -76,10 +87,33 @@ package cube.spark.components {
 			}
 		}
 		
+		override public function get scaleY():Number {
+			return _scaleY;
+		}
+		
 		override public function set scaleY(value:Number):void {
 			_scaleY = value;
 			if (dataGroup) {
 				dataGroup.scaleY = value;
+			}
+		}
+		
+		public function zoom():void {
+			return;
+			if (_zoomEffect && (width*height <= 640*480)) {
+				_zoomEffect.addEventListener(EffectEvent.EFFECT_UPDATE, zoomEffect_effectUpdateHandler, false, 0, true);
+				_zoomEffect.addEventListener(EffectEvent.EFFECT_END, zoomEffect_effectEndHandler, false, 0, true);
+				_zoomEffect.start(
+					{
+						center: [dataGroup.width*.5, dataGroup.height*.5],
+						amount: .5
+					},
+					{
+						center: [dataGroup.width*.5, dataGroup.height*.5],
+						amount: 0
+					},
+					200
+				);
 			}
 		}
 		
@@ -117,10 +151,15 @@ package cube.spark.components {
 				dataGroup.setStyle("connectorLineColor", getStyle("connectorLineColor"));
 				dataGroup.scaleX = _scaleX;
 				dataGroup.scaleY = _scaleY;
+				_zoomEffect = new PixelBenderEffect();
+				_zoomEffect.target = dataGroup;
+				_zoomEffect.shader = new (getStyle("zoomFilter"))();
 				dispatchEvent(new OrganizationChartEvent(OrganizationChartEvent.DATA_GROUP_READY, 0, null));
 			} else if (instance == scroller) {
 				scroller.horizontalScrollBar.addEventListener(Event.CHANGE, scroller_changeHandler, false, 0, true);
 				scroller.verticalScrollBar.addEventListener(Event.CHANGE, scroller_changeHandler, false, 0, true);
+			} else if (instance == scrollDragHandler) {
+				scrollDragHandler.addEventListener(ScrollDragHandlerEvent.SCROLL_DRAG, scrollDragHandler_scrollDragHandler, false, 0, true);
 			}
 		}
 		
@@ -143,11 +182,29 @@ package cube.spark.components {
 			return true;
 		}
 		
-		private function scroller_changeHandler(event:Event):void {
+		protected function handleScrollUpdate():void {
 			if (!_invalidationTimeout) {
 				addEventListener(Event.ENTER_FRAME, self_enterFrameHandler, false, 0, true);
 				_invalidationTimeout = true;
 			}
+		}
+		
+		private function scroller_changeHandler(event:Event):void {
+			handleScrollUpdate();
+		}
+		
+		private function scrollDragHandler_scrollDragHandler(event:ScrollDragHandlerEvent):void {
+			handleScrollUpdate();
+		}
+		
+		private function zoomEffect_effectUpdateHandler(event:EffectEvent):void {
+			scaleX -= .02;
+			scaleY -= .02;
+		}
+		
+		private function zoomEffect_effectEndHandler(event:EffectEvent):void {
+			_zoomEffect.removeEventListener(EffectEvent.EFFECT_UPDATE, zoomEffect_effectUpdateHandler);
+			_zoomEffect.removeEventListener(EffectEvent.EFFECT_END, zoomEffect_effectEndHandler);
 		}
 
 		private function self_enterFrameHandler(event:Event):void {
